@@ -30,6 +30,18 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from streamlit import config as _st_config
+
+# Programmatically enforce light, professional theme for this interface
+# Overrides any global dark theme so tables, canvas dataframes, and inputs render with clean light surfaces
+try:
+    _st_config.set_option("theme.base", "light")
+    _st_config.set_option("theme.primaryColor", "#C25E3E")
+    _st_config.set_option("theme.backgroundColor", "#FFFFFF")
+    _st_config.set_option("theme.secondaryBackgroundColor", "#FFF8F3")
+    _st_config.set_option("theme.textColor", "#1F2937")
+except Exception:
+    pass
 
 # Backend pipeline imports (reused directly from src)
 from src.data.loader import DataLoadError, load_reviews, infer_column_names
@@ -43,53 +55,252 @@ from src.clustering.embedder import run_clustering_pipeline
 from src.insights.intelligence import generate_insights
 from src.search.semantic_search import SemanticSearch
 
-# Configure Streamlit page layout (strictly no emojis)
+# Configure Streamlit page layout (strictly zero emojis)
 st.set_page_config(
     page_title="ReviewPulse | Product Intelligence",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Professional B2B CSS Styling
+# ── Color System: Light, Warm, Professional ───────────────────────────────────
+# Main background: #FFFFFF (clean pure white)
+# Sidebar: #FFF8F3 (light warm neutral / soft cream)
+# Secondary surfaces: #FAFAF9 / #FFFFFF with #EAE4DC borders
+# Primary text: #1F2937 (dark charcoal, WCAG AAA compliant)
+# Secondary text: #4B5563 (high contrast readable slate)
+# Primary accent: #C25E3E (warm muted terracotta/coral)
+# Active tint: #FDF2EC
+
+COLOR_PRIMARY = "#C25E3E"
+COLOR_PRIMARY_HOVER = "#A94E31"
+COLOR_PRIMARY_TINT = "#FDF2EC"
+COLOR_PRIMARY_BORDER = "#F5D5C6"
+
+COLOR_MAIN_BG = "#FFFFFF"
+COLOR_SIDEBAR_BG = "#FFF8F3"
+COLOR_SIDEBAR_BORDER = "#EAE4DC"
+COLOR_SURFACE = "#FAFAF9"
+COLOR_BORDER = "#E5E7EB"
+
+COLOR_TEXT_PRIMARY = "#1F2937"
+COLOR_TEXT_MUTED = "#4B5563"
+
+# Semantic Colors (Restrained & Muted)
+COLOR_POSITIVE = "#16A34A"
+COLOR_NEGATIVE = "#DC2626"
+COLOR_NEUTRAL = "#6B7280"
+COLOR_WARNING = "#D97706"
+
+PALETTE_SENTIMENT = {
+    "Positive": COLOR_POSITIVE,
+    "Negative": COLOR_NEGATIVE,
+    "Neutral": COLOR_NEUTRAL,
+    "Unknown": "#9CA3AF",
+    "Unavailable": "#9CA3AF",
+}
+
+PALETTE_EMOTIONS = {
+    "joy": "#D97706",
+    "anger": "#DC2626",
+    "sadness": "#4B6B94",
+    "fear": "#8C6D97",
+    "surprise": "#0D9488",
+    "neutral": "#6B7280",
+    "disgust": "#B45309",
+}
+
+PALETTE_TOPICS = [
+    "#C25E3E", "#4B6B94", "#5B8E7D", "#8C6D97",
+    "#D97706", "#64748B", "#A0522D", "#3B82F6",
+]
+
+# ── Global Light Enterprise CSS ───────────────────────────────────────────────
 ENTERPRISE_CSS = """
 <style>
 /* Modern Typography and Base */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-html, body, [class*="css"] {
+:root, [data-testid="stAppViewContainer"], .stApp, body, html {
+    --background-color: #FFFFFF !important;
+    --secondary-background-color: #FFF8F3 !important;
+    --text-color: #1F2937 !important;
+    --primary-color: #C25E3E !important;
+    background-color: #FFFFFF !important;
+    color: #1F2937 !important;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: #0F172A;
 }
 
-/* Main background tint */
-.stApp {
-    background-color: #F8FAFC;
+/* Header bar */
+[data-testid="stHeader"] {
+    background-color: #FFFFFF !important;
+    border-bottom: 1px solid #F3F4F6 !important;
 }
 
-/* Sidebar styling */
+/* Sidebar: Warm Light Cream Theme */
 [data-testid="stSidebar"] {
-    background-color: #0F172A;
-    color: #F8FAFC;
-    border-right: 1px solid #1E293B;
+    background-color: #FFF8F3 !important;
+    color: #1F2937 !important;
+    border-right: 1px solid #EAE4DC !important;
 }
 
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span,
-[data-testid="stSidebar"] label {
-    color: #E2E8F0 !important;
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] div {
+    color: #1F2937;
 }
 
 [data-testid="stSidebar"] hr {
-    border-color: #334155;
+    border-color: #EAE4DC !important;
 }
 
-/* KPI Card container */
+/* Sidebar Navigation Items */
+[data-testid="stSidebar"] [data-testid="stRadio"] > div {
+    gap: 4px;
+}
+
+[data-testid="stSidebar"] [data-testid="stRadio"] label {
+    background: transparent;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
+    color: #374151 !important;
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
+    background-color: #F8EFE8 !important;
+    color: #1F2937 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-checked="true"],
+[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) {
+    background-color: #FDF2EC !important;
+    border-left: 3px solid #C25E3E !important;
+    color: #9E4226 !important;
+    font-weight: 600 !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stRadio"] input[type="radio"]:checked {
+    accent-color: #C25E3E !important;
+}
+
+/* Dataframe & Tables: Light styling */
+[data-testid="stDataFrame"],
+[data-testid="stDataFrame"] > div,
+.dvn-scroller,
+.dvn-inner,
+[data-testid="stDataFrame"] canvas {
+    background-color: #FFFFFF !important;
+    color: #1F2937 !important;
+}
+
+[data-testid="stDataFrame"] {
+    border: 1px solid #E7E5E4 !important;
+    border-radius: 6px !important;
+    background: #FFFFFF !important;
+}
+
+/* Standard HTML tables */
+[data-testid="stTable"] {
+    background-color: #FFFFFF !important;
+    color: #1F2937 !important;
+    border: 1px solid #E7E5E4 !important;
+    border-radius: 6px !important;
+}
+
+[data-testid="stTable"] th {
+    background-color: #FAF8F5 !important;
+    color: #1F2937 !important;
+    font-weight: 600 !important;
+    border-bottom: 2px solid #E7E5E4 !important;
+    padding: 10px 14px !important;
+}
+
+[data-testid="stTable"] td {
+    background-color: #FFFFFF !important;
+    color: #1F2937 !important;
+    border-bottom: 1px solid #F3F4F6 !important;
+    padding: 8px 14px !important;
+}
+
+[data-testid="stTable"] tr:hover td {
+    background-color: #FDF9F6 !important;
+}
+
+/* Form Controls & Inputs */
+.stTextInput input,
+.stSelectbox div[data-baseweb="select"] > div,
+.stMultiSelect div[data-baseweb="select"] > div,
+.stSlider {
+    background-color: #FFFFFF !important;
+    border-color: #D1D5DB !important;
+    color: #1F2937 !important;
+}
+
+.stTextInput input:focus,
+.stSelectbox div[data-baseweb="select"]:focus-within {
+    border-color: #C25E3E !important;
+    box-shadow: 0 0 0 1px #C25E3E !important;
+}
+
+.stFileUploader section {
+    border: 1px dashed #D1D5DB !important;
+    background-color: #FAF8F5 !important;
+}
+
+/* Buttons */
+button[kind="primary"],
+.stButton > button[type="primary"] {
+    background-color: #C25E3E !important;
+    color: #FFFFFF !important;
+    border: none !important;
+    font-weight: 600 !important;
+}
+
+button[kind="primary"]:hover,
+.stButton > button[type="primary"]:hover {
+    background-color: #A94E31 !important;
+}
+
+button[kind="secondary"],
+.stButton > button:not([type="primary"]),
+.stDownloadButton > button {
+    background-color: #FFFFFF !important;
+    color: #374151 !important;
+    border: 1px solid #D1D5DB !important;
+}
+
+button[kind="secondary"]:hover,
+.stButton > button:not([type="primary"]):hover,
+.stDownloadButton > button:hover {
+    background-color: #FAF8F5 !important;
+    border-color: #9CA3AF !important;
+}
+
+/* Expanders */
+[data-testid="stExpander"] {
+    background: #FFFFFF !important;
+    border: 1px solid #E7E5E4 !important;
+    border-radius: 6px !important;
+}
+
+[data-testid="stExpander"] summary {
+    background-color: #FAF8F5 !important;
+    color: #1F2937 !important;
+    font-weight: 600 !important;
+}
+
+/* KPI Cards */
 .rp-kpi-card {
     background: #FFFFFF;
-    border: 1px solid #E2E8F0;
+    border: 1px solid #E7E5E4;
     border-radius: 8px;
     padding: 18px 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
     height: 100%;
 }
 
@@ -98,14 +309,14 @@ html, body, [class*="css"] {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #64748B;
+    color: #6B7280;
     margin-bottom: 6px;
 }
 
 .rp-kpi-value {
     font-size: 26px;
     font-weight: 700;
-    color: #0F172A;
+    color: #111827;
     line-height: 1.1;
 }
 
@@ -117,9 +328,9 @@ html, body, [class*="css"] {
 
 .rp-delta-pos { color: #16A34A; }
 .rp-delta-neg { color: #DC2626; }
-.rp-delta-neu { color: #64748B; }
+.rp-delta-neu { color: #6B7280; }
 
-/* Section Header container */
+/* Section Headers */
 .rp-section-header {
     margin-top: 10px;
     margin-bottom: 20px;
@@ -128,25 +339,25 @@ html, body, [class*="css"] {
 .rp-section-title {
     font-size: 22px;
     font-weight: 700;
-    color: #0F172A;
+    color: #111827;
     margin-bottom: 4px;
 }
 
 .rp-section-subtitle {
     font-size: 13px;
-    color: #64748B;
+    color: #4B5563;
 }
 
-/* Callout banner */
+/* Callout Banners */
 .rp-callout {
-    background: #FFFFFF;
-    border-left: 4px solid #2563EB;
+    background: #FAFAF9;
+    border-left: 4px solid #C25E3E;
     border-radius: 4px 8px 8px 4px;
     padding: 14px 18px;
     margin-bottom: 18px;
-    border-top: 1px solid #E2E8F0;
-    border-right: 1px solid #E2E8F0;
-    border-bottom: 1px solid #E2E8F0;
+    border-top: 1px solid #E7E5E4;
+    border-right: 1px solid #E7E5E4;
+    border-bottom: 1px solid #E7E5E4;
 }
 
 .rp-callout-warning {
@@ -161,6 +372,7 @@ html, body, [class*="css"] {
     border-color: #BBF7D0;
 }
 
+/* Badges */
 .rp-badge {
     display: inline-block;
     padding: 3px 8px;
@@ -171,91 +383,101 @@ html, body, [class*="css"] {
     letter-spacing: 0.04em;
 }
 
-.rp-badge-positive { background-color: #DCFCE7; color: #15803D; }
-.rp-badge-negative { background-color: #FEE2E2; color: #B91C1C; }
-.rp-badge-neutral  { background-color: #F1F5F9; color: #475569; }
-.rp-badge-warning  { background-color: #FEF3C7; color: #B45309; }
-.rp-badge-primary  { background-color: #DBEAFE; color: #1D4ED8; }
-
-/* Table adjustments */
-[data-testid="stDataFrame"] {
-    border: 1px solid #E2E8F0;
-    border-radius: 6px;
-    background: #FFFFFF;
-}
-
-/* Clean buttons */
-.stButton > button {
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 13px;
-    transition: all 0.15s ease-in-out;
-}
+.rp-badge-positive { background-color: #DCFCE7; color: #166534; border: 1px solid #BBF7D0; }
+.rp-badge-negative { background-color: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+.rp-badge-neutral  { background-color: #F3F4F6; color: #374151; border: 1px solid #E5E7EB; }
+.rp-badge-warning  { background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+.rp-badge-primary  { background-color: #FDF2EC; color: #9E4226; border: 1px solid #F5D5C6; }
 </style>
 """
 
 st.markdown(ENTERPRISE_CSS, unsafe_allow_html=True)
 
-# Consistent Professional Plotly Palette
-COLOR_PRIMARY = "#2563EB"
-COLOR_POSITIVE = "#16A34A"
-COLOR_NEGATIVE = "#DC2626"
-COLOR_NEUTRAL = "#64748B"
-COLOR_WARNING = "#D97706"
-COLOR_INDIGO = "#4F46E5"
 
-PALETTE_SENTIMENT = {
-    "Positive": COLOR_POSITIVE,
-    "Negative": COLOR_NEGATIVE,
-    "Neutral": COLOR_NEUTRAL,
-    "Unknown": "#CBD5E1",
-    "Unavailable": "#CBD5E1",
-}
+def apply_chart_theme(
+    fig: go.Figure,
+    height: Optional[int] = 340,
+    x_title: Optional[str] = None,
+    y_title: Optional[str] = None,
+) -> go.Figure:
+    """
+    Applies a clean, high-contrast, light professional chart theme.
+    Guarantees readable dark charcoal labels, visible axes, clear titles,
+    and crisp legends with zero low-contrast text.
+    """
+    xaxis_config = dict(
+        showgrid=True,
+        gridcolor="#F3F4F6",
+        gridwidth=1,
+        zeroline=True,
+        zerolinecolor="#E5E7EB",
+        showline=True,
+        linecolor="#9CA3AF",
+        linewidth=1.5,
+        tickfont=dict(color="#1F2937", size=11, family="Inter, sans-serif"),
+        ticks="outside",
+        tickcolor="#9CA3AF",
+        ticklen=4,
+    )
+    if x_title:
+        xaxis_config["title"] = dict(
+            text=x_title,
+            font=dict(color="#111827", size=13, family="Inter, sans-serif"),
+        )
+    else:
+        xaxis_config["title"] = dict(font=dict(color="#111827", size=13))
 
-PALETTE_EMOTIONS = {
-    "joy": "#EAB308",
-    "anger": "#DC2626",
-    "sadness": "#3B82F6",
-    "fear": "#8B5CF6",
-    "surprise": "#06B6D4",
-    "neutral": "#64748B",
-    "disgust": "#D97706",
-}
+    yaxis_config = dict(
+        showgrid=True,
+        gridcolor="#F3F4F6",
+        gridwidth=1,
+        zeroline=True,
+        zerolinecolor="#E5E7EB",
+        showline=True,
+        linecolor="#9CA3AF",
+        linewidth=1.5,
+        tickfont=dict(color="#1F2937", size=11, family="Inter, sans-serif"),
+        ticks="outside",
+        tickcolor="#9CA3AF",
+        ticklen=4,
+    )
+    if y_title:
+        yaxis_config["title"] = dict(
+            text=y_title,
+            font=dict(color="#111827", size=13, family="Inter, sans-serif"),
+        )
+    else:
+        yaxis_config["title"] = dict(font=dict(color="#111827", size=13))
 
-
-def apply_chart_theme(fig: go.Figure, height: Optional[int] = 340) -> go.Figure:
-    """Applies a clean, modern B2B chart theme with zero visual clutter."""
     fig.update_layout(
-        font=dict(family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif", size=11, color="#334155"),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        margin=dict(l=15, r=15, t=30, b=25),
+        font=dict(
+            family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",
+            size=12,
+            color="#1F2937",
+        ),
+        paper_bgcolor="#FFFFFF",
+        plot_bgcolor="#FFFFFF",
+        margin=dict(l=25, r=25, t=35, b=35),
         height=height,
         hoverlabel=dict(
-            bgcolor="#0F172A",
-            font_size=11,
+            bgcolor="#1F2937",
+            font_size=12,
             font_family="Inter, sans-serif",
-            font_color="#F8FAFC",
+            font_color="#FFFFFF",
+            bordercolor="#374151",
         ),
-        xaxis=dict(
-            showgrid=True,
-            gridcolor="#F1F5F9",
-            zeroline=False,
-            linecolor="#E2E8F0",
-        ),
-        yaxis=dict(
-            showgrid=True,
-            gridcolor="#F1F5F9",
-            zeroline=False,
-            linecolor="#E2E8F0",
-        ),
+        xaxis=xaxis_config,
+        yaxis=yaxis_config,
         legend=dict(
             orientation="h",
             yanchor="bottom",
             y=1.02,
             xanchor="right",
             x=1,
-            font=dict(size=11),
+            font=dict(color="#1F2937", size=12, family="Inter, sans-serif"),
+            bgcolor="rgba(255,255,255,0.9)",
+            bordercolor="#E5E7EB",
+            borderwidth=1,
         ),
     )
     return fig
@@ -383,9 +605,9 @@ def render_sidebar():
     with st.sidebar:
         st.markdown(
             """
-            <div style="padding: 6px 0 16px 0;">
-                <div style="font-size: 18px; font-weight: 700; color: #FFFFFF; letter-spacing: -0.01em;">ReviewPulse</div>
-                <div style="font-size: 11px; font-weight: 500; color: #94A3B8; margin-top: 2px;">Enterprise Product Intelligence</div>
+            <div style="padding: 4px 0 14px 0;">
+                <div style="font-size: 18px; font-weight: 700; color: #1F2937; letter-spacing: -0.01em;">ReviewPulse</div>
+                <div style="font-size: 12px; font-weight: 500; color: #6B7280; margin-top: 2px;">Enterprise Product Intelligence</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -393,7 +615,7 @@ def render_sidebar():
 
         st.markdown("---")
         st.markdown(
-            "<div style='font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94A3B8; letter-spacing: 0.05em;'>Data Source</div>",
+            "<div style='font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6B7280; letter-spacing: 0.05em;'>Data Source</div>",
             unsafe_allow_html=True,
         )
 
@@ -426,7 +648,7 @@ def render_sidebar():
 
         st.markdown("---")
         st.markdown(
-            "<div style='font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94A3B8; letter-spacing: 0.05em;'>Pipeline Configuration</div>",
+            "<div style='font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6B7280; letter-spacing: 0.05em;'>Pipeline Configuration</div>",
             unsafe_allow_html=True,
         )
 
@@ -447,7 +669,7 @@ def render_sidebar():
 
         st.markdown("---")
         st.markdown(
-            "<div style='font-size: 11px; font-weight: 600; text-transform: uppercase; color: #94A3B8; letter-spacing: 0.05em;'>Navigation</div>",
+            "<div style='font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6B7280; letter-spacing: 0.05em;'>Navigation</div>",
             unsafe_allow_html=True,
         )
 
@@ -472,10 +694,10 @@ def render_sidebar():
             df = st.session_state["df"]
             st.markdown(
                 f"""
-                <div style='background: #1E293B; border-radius: 6px; padding: 10px 12px;'>
-                    <div style='font-size: 10px; text-transform: uppercase; color: #94A3B8; font-weight: 600;'>Active Corpus</div>
-                    <div style='font-size: 14px; font-weight: 700; color: #F8FAFC; margin-top: 2px;'>{len(df):,} Reviews</div>
-                    <div style='font-size: 11px; color: #10B981; margin-top: 2px;'>Pipeline Active</div>
+                <div style='background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 12px 14px;'>
+                    <div style='font-size: 10px; text-transform: uppercase; color: #6B7280; font-weight: 600; letter-spacing: 0.05em;'>Active Corpus</div>
+                    <div style='font-size: 15px; font-weight: 700; color: #1F2937; margin-top: 2px;'>{len(df):,} Reviews</div>
+                    <div style='font-size: 11px; font-weight: 500; color: #16A34A; margin-top: 2px;'>Pipeline Active</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -483,9 +705,9 @@ def render_sidebar():
         else:
             st.markdown(
                 """
-                <div style='background: #1E293B; border-radius: 6px; padding: 10px 12px;'>
-                    <div style='font-size: 10px; text-transform: uppercase; color: #94A3B8; font-weight: 600;'>Status</div>
-                    <div style='font-size: 12px; color: #CBD5E1; margin-top: 2px;'>Awaiting Execution</div>
+                <div style='background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 12px 14px;'>
+                    <div style='font-size: 10px; text-transform: uppercase; color: #6B7280; font-weight: 600; letter-spacing: 0.05em;'>Pipeline Status</div>
+                    <div style='font-size: 13px; font-weight: 500; color: #4B5563; margin-top: 2px;'>Awaiting Execution</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -500,10 +722,10 @@ def render_empty_state():
     """Renders the professional landing state when no analysis is active."""
     st.markdown(
         """
-        <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 32px 36px; margin-top: 10px; margin-bottom: 24px;">
-            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #2563EB;">Enterprise Analytics</div>
-            <div style="font-size: 28px; font-weight: 700; color: #0F172A; margin-top: 4px;">ReviewPulse Intelligence Platform</div>
-            <div style="font-size: 15px; color: #475569; margin-top: 6px; max-width: 800px;">
+        <div style="background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 8px; padding: 32px 36px; margin-top: 10px; margin-bottom: 24px;">
+            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #C25E3E;">Enterprise Analytics</div>
+            <div style="font-size: 28px; font-weight: 700; color: #111827; margin-top: 4px;">ReviewPulse Intelligence Platform</div>
+            <div style="font-size: 15px; color: #4B5563; margin-top: 6px; max-width: 800px; line-height: 1.5;">
                 Extract actionable product signals, track customer sentiment distribution, surface granular aspect performance, and isolate high-value issues across unstructured customer reviews.
             </div>
         </div>
@@ -521,8 +743,8 @@ def render_empty_state():
             """
             <div class="rp-kpi-card">
                 <div class="rp-kpi-label">Sentiment Engine</div>
-                <div style="font-size: 14px; font-weight: 600; color: #0F172A; margin-top: 4px;">Dual-Layer Detection</div>
-                <div style="font-size: 12px; color: #64748B; margin-top: 6px;">
+                <div style="font-size: 14px; font-weight: 600; color: #111827; margin-top: 4px;">Dual-Layer Detection</div>
+                <div style="font-size: 12px; color: #4B5563; margin-top: 6px; line-height: 1.45;">
                     Combines rule-based VADER lexicon with contextual DistilBERT transformers, tracking inter-model agreement and flagging uncertainty.
                 </div>
             </div>
@@ -534,8 +756,8 @@ def render_empty_state():
             """
             <div class="rp-kpi-card">
                 <div class="rp-kpi-label">Aspect Extraction</div>
-                <div style="font-size: 14px; font-weight: 600; color: #0F172A; margin-top: 4px;">Feature-Level Insights</div>
-                <div style="font-size: 12px; color: #64748B; margin-top: 6px;">
+                <div style="font-size: 14px; font-weight: 600; color: #111827; margin-top: 4px;">Feature-Level Insights</div>
+                <div style="font-size: 12px; color: #4B5563; margin-top: 6px; line-height: 1.45;">
                     Isolates mentions of battery, build, performance, software, pricing, and service with localized sentiment mapping.
                 </div>
             </div>
@@ -547,8 +769,8 @@ def render_empty_state():
             """
             <div class="rp-kpi-card">
                 <div class="rp-kpi-label">Topic Discovery</div>
-                <div style="font-size: 14px; font-weight: 600; color: #0F172A; margin-top: 4px;">Unsupervised Clusters</div>
-                <div style="font-size: 12px; color: #64748B; margin-top: 6px;">
+                <div style="font-size: 14px; font-weight: 600; color: #111827; margin-top: 4px;">Unsupervised Clusters</div>
+                <div style="font-size: 12px; color: #4B5563; margin-top: 6px; line-height: 1.45;">
                     Groups feedback into coherent operational topics with 2D embedding space projections and TF-IDF keyphrase extraction.
                 </div>
             </div>
@@ -560,8 +782,8 @@ def render_empty_state():
             """
             <div class="rp-kpi-card">
                 <div class="rp-kpi-label">Semantic Discovery</div>
-                <div style="font-size: 14px; font-weight: 600; color: #0F172A; margin-top: 4px;">Neural Search Engine</div>
-                <div style="font-size: 12px; color: #64748B; margin-top: 6px;">
+                <div style="font-size: 14px; font-weight: 600; color: #111827; margin-top: 4px;">Neural Search Engine</div>
+                <div style="font-size: 12px; color: #4B5563; margin-top: 6px; line-height: 1.45;">
                     Enables cosine-similarity natural language queries across the entire review collection to pinpoint specific feedback.
                 </div>
             </div>
@@ -573,8 +795,8 @@ def render_empty_state():
     st.markdown(
         """
         <div class="rp-callout">
-            <div style="font-size: 14px; font-weight: 600; color: #1E40AF;">Getting Started</div>
-            <div style="font-size: 13px; color: #334155; margin-top: 4px;">
+            <div style="font-size: 14px; font-weight: 600; color: #9E4226;">Getting Started</div>
+            <div style="font-size: 13px; color: #374151; margin-top: 4px;">
                 Select <b>Sample Dataset</b> in the sidebar and click <b>Run Analysis</b>, or upload your own CSV containing customer reviews.
             </div>
         </div>
@@ -690,7 +912,7 @@ def render_overview_page(
 
     with r1_col1:
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Sentiment Distribution</div>",
+            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Sentiment Distribution</div>",
             unsafe_allow_html=True,
         )
         if "sentiment" in df.columns:
@@ -707,6 +929,7 @@ def render_overview_page(
             fig_pie.update_traces(
                 textposition="inside",
                 textinfo="percent+label",
+                textfont=dict(color="#FFFFFF", size=12, family="Inter, sans-serif"),
                 marker=dict(line=dict(color="#FFFFFF", width=2)),
             )
             fig_pie = apply_chart_theme(fig_pie, height=300)
@@ -716,7 +939,7 @@ def render_overview_page(
 
     with r1_col2:
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Leading Discussion Topics</div>",
+            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Leading Discussion Topics</div>",
             unsafe_allow_html=True,
         )
         if topic_summary is not None and not topic_summary.empty:
@@ -729,7 +952,7 @@ def render_overview_page(
                 color_discrete_sequence=[COLOR_PRIMARY],
                 labels={"count": "Review Count", "topic_label": "Topic"},
             )
-            fig_top = apply_chart_theme(fig_top, height=300)
+            fig_top = apply_chart_theme(fig_top, height=300, x_title="Review Count", y_title="Topic")
             fig_top.update_layout(showlegend=False)
             st.plotly_chart(fig_top, use_container_width=True)
         else:
@@ -742,7 +965,7 @@ def render_overview_page(
 
     with r2_col1:
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Aspect Sentiment Breakdown</div>",
+            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Aspect Sentiment Breakdown</div>",
             unsafe_allow_html=True,
         )
         if aspect_summary is not None and not aspect_summary.empty:
@@ -763,7 +986,7 @@ def render_overview_page(
                 barmode="stack",
                 labels={"Count": "Mentions", "aspect": "Product Aspect"},
             )
-            fig_aspect = apply_chart_theme(fig_aspect, height=310)
+            fig_aspect = apply_chart_theme(fig_aspect, height=310, x_title="Mention Count", y_title="Product Aspect")
             fig_aspect.update_layout(yaxis={"categoryorder": "total ascending"})
             st.plotly_chart(fig_aspect, use_container_width=True)
         else:
@@ -771,7 +994,7 @@ def render_overview_page(
 
     with r2_col2:
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Customer Emotion Spectrum</div>",
+            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Customer Emotion Spectrum</div>",
             unsafe_allow_html=True,
         )
         if "emotion" in df.columns:
@@ -785,7 +1008,7 @@ def render_overview_page(
                 color_discrete_map=PALETTE_EMOTIONS,
                 labels={"Count": "Reviews", "Emotion": "Detected Emotion"},
             )
-            fig_emo = apply_chart_theme(fig_emo, height=310)
+            fig_emo = apply_chart_theme(fig_emo, height=310, x_title="Detected Emotion", y_title="Reviews")
             fig_emo.update_layout(showlegend=False)
             st.plotly_chart(fig_emo, use_container_width=True)
         else:
@@ -795,7 +1018,7 @@ def render_overview_page(
     if "rating" in df.columns and df["rating"].notna().sum() > 0:
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Customer Rating Distribution</div>",
+            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Customer Rating Distribution</div>",
             unsafe_allow_html=True,
         )
         rd_df = df["rating"].dropna().value_counts().reset_index()
@@ -808,7 +1031,7 @@ def render_overview_page(
             color_discrete_sequence=[COLOR_PRIMARY],
             labels={"Count": "Reviews", "Rating": "Star Rating"},
         )
-        fig_r = apply_chart_theme(fig_r, height=260)
+        fig_r = apply_chart_theme(fig_r, height=270, x_title="Star Rating", y_title="Reviews")
         fig_r.update_layout(showlegend=False)
         st.plotly_chart(fig_r, use_container_width=True)
 
@@ -835,8 +1058,8 @@ def render_sentiment_page(df: pd.DataFrame):
     with col1:
         st.markdown(
             """
-            <div style="font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 4px;">VADER Lexicon Model</div>
-            <div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">Deterministic rule-based sentiment mapping.</div>
+            <div style="font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 4px;">VADER Lexicon Model</div>
+            <div style="font-size: 12px; color: #4B5563; margin-bottom: 8px;">Deterministic rule-based sentiment mapping.</div>
             """,
             unsafe_allow_html=True,
         )
@@ -849,9 +1072,9 @@ def render_sentiment_page(df: pd.DataFrame):
                 y="Count",
                 color="Sentiment",
                 color_discrete_map=PALETTE_SENTIMENT,
-                labels={"Count": "Reviews"},
+                labels={"Count": "Reviews", "Sentiment": "Sentiment"},
             )
-            fig_v = apply_chart_theme(fig_v, height=280)
+            fig_v = apply_chart_theme(fig_v, height=280, x_title="Sentiment Classification", y_title="Reviews")
             fig_v.update_layout(showlegend=False)
             st.plotly_chart(fig_v, use_container_width=True)
         else:
@@ -860,8 +1083,8 @@ def render_sentiment_page(df: pd.DataFrame):
     with col2:
         st.markdown(
             """
-            <div style="font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 4px;">Transformer Model</div>
-            <div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">Contextual neural representation (DistilBERT).</div>
+            <div style="font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 4px;">Transformer Model</div>
+            <div style="font-size: 12px; color: #4B5563; margin-bottom: 8px;">Contextual neural representation (DistilBERT).</div>
             """,
             unsafe_allow_html=True,
         )
@@ -874,9 +1097,9 @@ def render_sentiment_page(df: pd.DataFrame):
                 y="Count",
                 color="Sentiment",
                 color_discrete_map=PALETTE_SENTIMENT,
-                labels={"Count": "Reviews"},
+                labels={"Count": "Reviews", "Sentiment": "Sentiment"},
             )
-            fig_t = apply_chart_theme(fig_t, height=280)
+            fig_t = apply_chart_theme(fig_t, height=280, x_title="Sentiment Classification", y_title="Reviews")
             fig_t.update_layout(showlegend=False)
             st.plotly_chart(fig_t, use_container_width=True)
         else:
@@ -887,8 +1110,8 @@ def render_sentiment_page(df: pd.DataFrame):
     # Section 2: Model Agreement & Disagreement Audit
     st.markdown(
         """
-        <div style="font-size: 16px; font-weight: 600; color: #0F172A; margin-bottom: 4px;">Model Agreement & Divergence</div>
-        <div style="font-size: 12px; color: #64748B; margin-bottom: 12px;">Evaluating classification consensus between lexicon and transformer systems.</div>
+        <div style="font-size: 16px; font-weight: 600; color: #111827; margin-bottom: 4px;">Model Agreement & Divergence</div>
+        <div style="font-size: 12px; color: #4B5563; margin-bottom: 12px;">Evaluating classification consensus between lexicon and transformer systems.</div>
         """,
         unsafe_allow_html=True,
     )
@@ -953,7 +1176,7 @@ def render_sentiment_page(df: pd.DataFrame):
     col_c1, col_c2 = st.columns(2)
     with col_c1:
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Prediction Confidence Spectrum</div>",
+            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Prediction Confidence Spectrum</div>",
             unsafe_allow_html=True,
         )
         if has_transformer and "transformer_confidence" in df.columns:
@@ -970,8 +1193,9 @@ def render_sentiment_page(df: pd.DataFrame):
                 line_color=COLOR_NEGATIVE,
                 annotation_text="Confidence Cutoff (0.65)",
                 annotation_position="top left",
+                annotation_font=dict(color="#991B1B", size=11, family="Inter, sans-serif"),
             )
-            fig_conf = apply_chart_theme(fig_conf, height=280)
+            fig_conf = apply_chart_theme(fig_conf, height=290, x_title="Confidence Score", y_title="Review Count")
             st.plotly_chart(fig_conf, use_container_width=True)
         elif has_vader and "vader_compound" in df.columns:
             fig_vscore = px.histogram(
@@ -981,12 +1205,12 @@ def render_sentiment_page(df: pd.DataFrame):
                 color_discrete_sequence=[COLOR_PRIMARY],
                 labels={"vader_compound": "VADER Compound Score"},
             )
-            fig_vscore = apply_chart_theme(fig_vscore, height=280)
+            fig_vscore = apply_chart_theme(fig_vscore, height=290, x_title="VADER Compound Score", y_title="Review Count")
             st.plotly_chart(fig_vscore, use_container_width=True)
 
     with col_c2:
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Review Length vs Sentiment</div>",
+            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Review Length vs Sentiment</div>",
             unsafe_allow_html=True,
         )
         text_col = "original_review" if "original_review" in df.columns else "cleaned_review"
@@ -1002,14 +1226,14 @@ def render_sentiment_page(df: pd.DataFrame):
                 barmode="overlay",
                 labels={"char_length": "Character Count"},
             )
-            fig_len = apply_chart_theme(fig_len, height=280)
+            fig_len = apply_chart_theme(fig_len, height=290, x_title="Character Count", y_title="Review Count")
             st.plotly_chart(fig_len, use_container_width=True)
 
     # Section 4: Rating vs Sentiment & Temporal Trends
     if "date" in df.columns and df["date"].notna().sum() > 5 and "sentiment" in df.columns:
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Sentiment Movement Over Time</div>",
+            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Sentiment Movement Over Time</div>",
             unsafe_allow_html=True,
         )
         try:
@@ -1025,7 +1249,7 @@ def render_sentiment_page(df: pd.DataFrame):
                 markers=True,
                 labels={"count": "Monthly Reviews", "month": "Timeline"},
             )
-            fig_time = apply_chart_theme(fig_time, height=300)
+            fig_time = apply_chart_theme(fig_time, height=310, x_title="Timeline", y_title="Monthly Reviews")
             st.plotly_chart(fig_time, use_container_width=True)
         except Exception:
             pass
@@ -1105,8 +1329,8 @@ def render_aspect_page(df: pd.DataFrame, aspects_df: pd.DataFrame, aspect_summar
     # Net Sentiment Score Chart
     st.markdown(
         """
-        <div style="font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 4px;">Net Aspect Sentiment Score</div>
-        <div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">Calculated as (Positive Mentions - Negative Mentions) / Total Mentions. Normalized from -1.00 to +1.00.</div>
+        <div style="font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 4px;">Net Aspect Sentiment Score</div>
+        <div style="font-size: 12px; color: #4B5563; margin-bottom: 8px;">Calculated as (Positive Mentions - Negative Mentions) / Total Mentions. Normalized from -1.00 to +1.00.</div>
         """,
         unsafe_allow_html=True,
     )
@@ -1122,8 +1346,8 @@ def render_aspect_page(df: pd.DataFrame, aspects_df: pd.DataFrame, aspect_summar
             color_discrete_map="identity",
             labels={"net_sentiment": "Net Sentiment Score", "aspect": "Feature Aspect"},
         )
-        fig_net.add_vline(x=0, line_dash="solid", line_color="#94A3B8")
-        fig_net = apply_chart_theme(fig_net, height=320)
+        fig_net.add_vline(x=0, line_dash="solid", line_color="#4B5563", line_width=1.5)
+        fig_net = apply_chart_theme(fig_net, height=320, x_title="Net Sentiment Score (-1.00 to +1.00)", y_title="Feature Aspect")
         fig_net.update_layout(showlegend=False)
         st.plotly_chart(fig_net, use_container_width=True)
 
@@ -1133,7 +1357,7 @@ def render_aspect_page(df: pd.DataFrame, aspects_df: pd.DataFrame, aspect_summar
     p_col, c_col = st.columns(2)
     with p_col:
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Top Praised Product Features</div>",
+            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Top Praised Product Features</div>",
             unsafe_allow_html=True,
         )
         pos_aspects = (
@@ -1151,9 +1375,9 @@ def render_aspect_page(df: pd.DataFrame, aspects_df: pd.DataFrame, aspect_summar
                 y="aspect",
                 orientation="h",
                 color_discrete_sequence=[COLOR_POSITIVE],
-                labels={"Count": "Positive Mentions", "aspect": "Aspect"},
+                labels={"Count": "Positive Mentions", "aspect": "Feature Aspect"},
             )
-            fig_p = apply_chart_theme(fig_p, height=280)
+            fig_p = apply_chart_theme(fig_p, height=280, x_title="Positive Mentions", y_title="Feature Aspect")
             fig_p.update_layout(showlegend=False)
             st.plotly_chart(fig_p, use_container_width=True)
         else:
@@ -1161,7 +1385,7 @@ def render_aspect_page(df: pd.DataFrame, aspects_df: pd.DataFrame, aspect_summar
 
     with c_col:
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Top Criticized Product Issues</div>",
+            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Top Criticized Product Issues</div>",
             unsafe_allow_html=True,
         )
         neg_aspects = (
@@ -1179,9 +1403,9 @@ def render_aspect_page(df: pd.DataFrame, aspects_df: pd.DataFrame, aspect_summar
                 y="aspect",
                 orientation="h",
                 color_discrete_sequence=[COLOR_NEGATIVE],
-                labels={"Count": "Negative Mentions", "aspect": "Aspect"},
+                labels={"Count": "Negative Mentions", "aspect": "Feature Aspect"},
             )
-            fig_c = apply_chart_theme(fig_c, height=280)
+            fig_c = apply_chart_theme(fig_c, height=280, x_title="Negative Mentions", y_title="Feature Aspect")
             fig_c.update_layout(showlegend=False)
             st.plotly_chart(fig_c, use_container_width=True)
         else:
@@ -1191,7 +1415,7 @@ def render_aspect_page(df: pd.DataFrame, aspects_df: pd.DataFrame, aspect_summar
 
     # Detailed Table
     st.markdown(
-        "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Aspect Mentions Audit Table</div>",
+        "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Aspect Mentions Audit Table</div>",
         unsafe_allow_html=True,
     )
     cols_to_show = [c for c in ["review_id", "aspect", "sentiment", "phrase", "confidence"] if c in aspects_df.columns]
@@ -1218,7 +1442,7 @@ def render_topic_page(df: pd.DataFrame, topic_summary: pd.DataFrame, keywords_df
 
     # Section 1: Topic Frequency
     st.markdown(
-        "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Discovered Topic Volume</div>",
+        "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Discovered Topic Volume</div>",
         unsafe_allow_html=True,
     )
     t_plot = topic_summary.head(10).sort_values("count", ascending=True)
@@ -1227,12 +1451,11 @@ def render_topic_page(df: pd.DataFrame, topic_summary: pd.DataFrame, keywords_df
         x="count",
         y="topic_label",
         orientation="h",
-        color="count",
-        color_continuous_scale="Blues",
+        color_discrete_sequence=[COLOR_PRIMARY],
         labels={"count": "Review Count", "topic_label": "Topic"},
     )
-    fig_tf = apply_chart_theme(fig_tf, height=320)
-    fig_tf.update_layout(coloraxis_showscale=False)
+    fig_tf = apply_chart_theme(fig_tf, height=320, x_title="Review Count", y_title="Topic")
+    fig_tf.update_layout(showlegend=False)
     st.plotly_chart(fig_tf, use_container_width=True)
 
     st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
@@ -1241,8 +1464,8 @@ def render_topic_page(df: pd.DataFrame, topic_summary: pd.DataFrame, keywords_df
     if "embed_x" in df.columns and "embed_y" in df.columns:
         st.markdown(
             """
-            <div style="font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 4px;">Semantic Review Space (PCA 2D Projection)</div>
-            <div style="font-size: 12px; color: #64748B; margin-bottom: 8px;">Dimensionality reduction projecting high-dimensional text embeddings into a 2D coordinate plane.</div>
+            <div style="font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 4px;">Semantic Review Space (PCA 2D Projection)</div>
+            <div style="font-size: 12px; color: #4B5563; margin-bottom: 8px;">Dimensionality reduction projecting high-dimensional text embeddings into a 2D coordinate plane.</div>
             """,
             unsafe_allow_html=True,
         )
@@ -1260,12 +1483,13 @@ def render_topic_page(df: pd.DataFrame, topic_summary: pd.DataFrame, keywords_df
             x="embed_x",
             y="embed_y",
             color=color_column,
+            color_discrete_sequence=PALETTE_TOPICS,
             hover_data=hover_data,
-            opacity=0.75,
+            opacity=0.8,
             labels={"embed_x": "Principal Component 1", "embed_y": "Principal Component 2"},
         )
-        fig_pca.update_traces(marker=dict(size=6, line=dict(width=0.5, color="#FFFFFF")))
-        fig_pca = apply_chart_theme(fig_pca, height=380)
+        fig_pca.update_traces(marker=dict(size=7, line=dict(width=0.75, color="#FFFFFF")))
+        fig_pca = apply_chart_theme(fig_pca, height=400, x_title="Principal Component 1", y_title="Principal Component 2")
         st.plotly_chart(fig_pca, use_container_width=True)
 
     st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
@@ -1275,7 +1499,7 @@ def render_topic_page(df: pd.DataFrame, topic_summary: pd.DataFrame, keywords_df
 
     with col_t_detail:
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Topic Representation & Snippets</div>",
+            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Topic Representation & Snippets</div>",
             unsafe_allow_html=True,
         )
         for _, row in topic_summary.head(6).iterrows():
@@ -1295,7 +1519,7 @@ def render_topic_page(df: pd.DataFrame, topic_summary: pd.DataFrame, keywords_df
 
     with col_kw:
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #0F172A; margin-bottom: 8px;'>Top Distinctive Keywords (TF-IDF)</div>",
+            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Top Distinctive Keywords (TF-IDF)</div>",
             unsafe_allow_html=True,
         )
         if keywords_df is not None and not keywords_df.empty:
@@ -1306,10 +1530,10 @@ def render_topic_page(df: pd.DataFrame, topic_summary: pd.DataFrame, keywords_df
                 x=score_col,
                 y="keyword",
                 orientation="h",
-                color_discrete_sequence=[COLOR_INDIGO],
+                color_discrete_sequence=[COLOR_PRIMARY],
                 labels={score_col: "Relevance Score", "keyword": "Keyword"},
             )
-            fig_kw = apply_chart_theme(fig_kw, height=360)
+            fig_kw = apply_chart_theme(fig_kw, height=360, x_title="Relevance Score", y_title="Keyword")
             fig_kw.update_layout(showlegend=False)
             st.plotly_chart(fig_kw, use_container_width=True)
         else:
@@ -1345,11 +1569,11 @@ def render_semantic_explorer_page(df: pd.DataFrame, searcher: SemanticSearch):
         st.markdown(
             """
             <div class="rp-callout">
-                <div style="font-size: 13px; font-weight: 600; color: #1E40AF;">Semantic Search Capability</div>
-                <div style="font-size: 12px; color: #334155; margin-top: 4px;">
+                <div style="font-size: 13px; font-weight: 600; color: #9E4226;">Semantic Search Capability</div>
+                <div style="font-size: 12px; color: #374151; margin-top: 4px;">
                     This interface evaluates conceptual semantic similarity rather than exact keyword matching. Try querying customer pain points:
                 </div>
-                <ul style="font-size: 12px; color: #475569; margin-top: 6px; margin-bottom: 0;">
+                <ul style="font-size: 12px; color: #4B5563; margin-top: 6px; margin-bottom: 0;">
                     <li><i>software freezes and connectivity drops</i></li>
                     <li><i>outstanding battery longevity</i></li>
                     <li><i>packaging was severely damaged upon arrival</i></li>
@@ -1370,8 +1594,8 @@ def render_semantic_explorer_page(df: pd.DataFrame, searcher: SemanticSearch):
 
     st.markdown(
         f"""
-        <div style="margin-bottom: 16px; font-size: 13px; font-weight: 500; color: #475569;">
-            Surfaced <span style="font-weight: 700; color: #0F172A;">{len(results)}</span> semantic matches for query: <i>"{query}"</i>
+        <div style="margin-bottom: 16px; font-size: 13px; font-weight: 500; color: #4B5563;">
+            Surfaced <span style="font-weight: 700; color: #111827;">{len(results)}</span> semantic matches for query: <i>"{query}"</i>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1400,17 +1624,17 @@ def render_semantic_explorer_page(df: pd.DataFrame, searcher: SemanticSearch):
 
         st.markdown(
             f"""
-            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 6px; padding: 16px 20px; margin-bottom: 12px;">
+            <div style="background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 16px 20px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <div>
                         <span class="rp-badge {badge_class}">{sentiment}</span>
-                        <span style="font-size: 12px; color: #64748B; margin-left: 8px;">{rating_tag}{topic_tag}{emotion_tag}Cosine Similarity: <b>{sim_score:.4f}</b></span>
+                        <span style="font-size: 12px; color: #4B5563; margin-left: 8px;">{rating_tag}{topic_tag}{emotion_tag}Cosine Similarity: <b>{sim_score:.4f}</b></span>
                     </div>
                 </div>
-                <div style="font-size: 13px; color: #1E293B; line-height: 1.5; border-left: 3px solid #CBD5E1; padding-left: 12px; margin-top: 6px;">
+                <div style="font-size: 13px; color: #1F2937; line-height: 1.5; border-left: 3px solid #D6D0C7; padding-left: 12px; margin-top: 6px;">
                     {review_text}
                 </div>
-                {"<div style='font-size: 11px; color: #64748B; margin-top: 8px;'>Aspects: " + str(aspects_val) + "</div>" if aspects_val and str(aspects_val).strip() else ""}
+                {"<div style='font-size: 11px; color: #6B7280; margin-top: 8px;'>Aspects: " + str(aspects_val) + "</div>" if aspects_val and str(aspects_val).strip() else ""}
             </div>
             """,
             unsafe_allow_html=True,
@@ -1489,7 +1713,7 @@ def render_review_explorer_page(df: pd.DataFrame, aspects_df: pd.DataFrame):
     st.markdown(
         f"""
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; margin-bottom: 12px;">
-            <div style="font-size: 13px; font-weight: 600; color: #0F172A;">
+            <div style="font-size: 13px; font-weight: 600; color: #111827;">
                 Showing {len(filtered):,} of {len(df):,} reviews matching criteria
             </div>
         </div>
@@ -1591,8 +1815,8 @@ def render_insights_page(
             st.markdown(
                 f"""
                 <div class="rp-callout">
-                    <div style="font-size: 14px; font-weight: 700; color: #1E40AF;">Strategic Verdict: Balanced Product Reception</div>
-                    <div style="font-size: 13px; color: #1E3A8A; margin-top: 3px;">
+                    <div style="font-size: 14px; font-weight: 700; color: #9E4226;">Strategic Verdict: Balanced Product Reception</div>
+                    <div style="font-size: 13px; color: #374151; margin-top: 3px;">
                         Customer sentiment exhibits parity ({pos_pct}% positive vs {neg_pct}% negative). Priority should be placed on mitigating identified failure points.
                     </div>
                 </div>
@@ -1606,9 +1830,9 @@ def render_insights_page(
     with col_str:
         st.markdown(
             """
-            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 6px; padding: 20px; height: 100%;">
+            <div style="background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 20px; height: 100%;">
                 <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #16A34A; letter-spacing: 0.05em;">Product Strengths</div>
-                <div style="font-size: 18px; font-weight: 700; color: #0F172A; margin-top: 4px; margin-bottom: 12px;">Most Praised Aspects</div>
+                <div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 4px; margin-bottom: 12px;">Most Praised Aspects</div>
             """,
             unsafe_allow_html=True,
         )
@@ -1618,8 +1842,8 @@ def render_insights_page(
                 name = asp.replace("_", " ").title()
                 st.markdown(
                     f"""
-                    <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #F1F5F9; font-size: 13px;">
-                        <span style="font-weight: 500; color: #1E293B;">{name}</span>
+                    <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #F3F4F6; font-size: 13px;">
+                        <span style="font-weight: 500; color: #1F2937;">{name}</span>
                         <span class="rp-badge rp-badge-positive">{count:,} positive mentions</span>
                     </div>
                     """,
@@ -1632,9 +1856,9 @@ def render_insights_page(
     with col_weak:
         st.markdown(
             """
-            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 6px; padding: 20px; height: 100%;">
+            <div style="background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 20px; height: 100%;">
                 <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #DC2626; letter-spacing: 0.05em;">Improvement Priorities</div>
-                <div style="font-size: 18px; font-weight: 700; color: #0F172A; margin-top: 4px; margin-bottom: 12px;">Most Criticized Aspects</div>
+                <div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 4px; margin-bottom: 12px;">Most Criticized Aspects</div>
             """,
             unsafe_allow_html=True,
         )
@@ -1644,8 +1868,8 @@ def render_insights_page(
                 name = asp.replace("_", " ").title()
                 st.markdown(
                     f"""
-                    <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #F1F5F9; font-size: 13px;">
-                        <span style="font-weight: 500; color: #1E293B;">{name}</span>
+                    <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #F3F4F6; font-size: 13px;">
+                        <span style="font-weight: 500; color: #1F2937;">{name}</span>
                         <span class="rp-badge rp-badge-negative">{count:,} negative mentions</span>
                     </div>
                     """,
@@ -1663,9 +1887,9 @@ def render_insights_page(
     with c_top:
         st.markdown(
             """
-            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 6px; padding: 20px;">
-                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #2563EB; letter-spacing: 0.05em;">Themes</div>
-                <div style="font-size: 16px; font-weight: 700; color: #0F172A; margin-top: 4px; margin-bottom: 12px;">Top Discussed Topics</div>
+            <div style="background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 20px;">
+                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #C25E3E; letter-spacing: 0.05em;">Themes</div>
+                <div style="font-size: 16px; font-weight: 700; color: #111827; margin-top: 4px; margin-bottom: 12px;">Top Discussed Topics</div>
             """,
             unsafe_allow_html=True,
         )
@@ -1676,9 +1900,9 @@ def render_insights_page(
                 cnt = item.get("count", 0)
                 st.markdown(
                     f"""
-                    <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #F1F5F9; font-size: 13px;">
-                        <span style="font-weight: 500; color: #1E293B;">{lbl}</span>
-                        <span style="color: #64748B; font-weight: 600;">{cnt:,} reviews</span>
+                    <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #F3F4F6; font-size: 13px;">
+                        <span style="font-weight: 500; color: #1F2937;">{lbl}</span>
+                        <span style="color: #4B5563; font-weight: 600;">{cnt:,} reviews</span>
                     </div>
                     """,
                     unsafe_allow_html=True,
@@ -1692,10 +1916,10 @@ def render_insights_page(
         unc_pct = insights.get("uncertain_pct", 0.0)
         st.markdown(
             f"""
-            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 6px; padding: 20px;">
+            <div style="background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 20px;">
                 <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #D97706; letter-spacing: 0.05em;">Quality Assurance</div>
-                <div style="font-size: 16px; font-weight: 700; color: #0F172A; margin-top: 4px; margin-bottom: 12px;">Uncertainty & Model Disagreement</div>
-                <div style="font-size: 13px; color: #334155; line-height: 1.5;">
+                <div style="font-size: 16px; font-weight: 700; color: #111827; margin-top: 4px; margin-bottom: 12px;">Uncertainty & Model Disagreement</div>
+                <div style="font-size: 13px; color: #374151; line-height: 1.5;">
                     <b>{unc_cnt:,} reviews ({unc_pct}%)</b> were flagged due to disagreement between VADER and DistilBERT or sub-threshold confidence (< 0.65).
                 </div>
             </div>
