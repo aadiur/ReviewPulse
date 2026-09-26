@@ -1,0 +1,15 @@
+# ReviewPulse — Streamlit configuration
+
+[theme]
+primaryColor = "#6C63FF"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#1E1E2E"
+textColor = "#FAFAFA"
+font = "sans serif"
+
+[server]
+maxUploadSize = 200
+enableCORS = false
+
+[browser]
+gatherUsageStats = false

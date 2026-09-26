@@ -1,0 +1,2 @@
+# This directory stores processed pipeline outputs.
+# These files are git-ignored. Run the pipeline to generate them.

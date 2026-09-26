@@ -1,0 +1,74 @@
+# ReviewPulse — Git Ignore
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+wheels/
+*.so
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ── Data files ────────────────────────────────────────────────────────────────
+# Ignore raw & processed data, but track sample dataset and .gitkeep
+data/raw/*
+!data/raw/sample_reviews.csv
+data/processed/*
+!data/processed/.gitkeep
+
+# ── Model caches ──────────────────────────────────────────────────────────────
+models/*
+!models/.gitkeep
+.cache/
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.bin
+
+# ── Streamlit ─────────────────────────────────────────────────────────────────
+.streamlit/secrets.toml
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+.env.*
+*.secret
+secrets.json
+credentials.json
+
+# ── OS artifacts ──────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor ───────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── Testing / coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
