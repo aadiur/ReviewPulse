@@ -38,40 +38,42 @@ Customer reviews contain critical qualitative signals, but manually reading thro
 ```
 reviewpulse/
 │
+├── app_professional.py       # Modern enterprise B2B dashboard (Zero emojis, recommended)
+├── streamlit_app.py          # Classic reference UI launcher
+│
 ├── app/
-│   ├── streamlit_app.py          # Streamlit entry point & state management
+│   ├── streamlit_app.py      # Classic Streamlit entry point
 │   └── pages/
-│       ├── overview.py           # Executive KPIs, sentiment donut, top aspects & topics
-│       ├── sentiment.py          # VADER vs. Transformer comparison & agreement analysis
-│       ├── aspects.py            # Aspect frequency, praised vs. criticized breakdown
-│       ├── topics.py             # Topic explorer cards & 2D PCA cluster scatter plot
-│       ├── semantic_search.py    # Natural-language query interface with similarity ranks
-│       ├── reviews.py            # Multi-dimensional filtering and CSV export
-│       └── insights.py           # Automated product intelligence summary
+│       ├── overview.py       # Executive KPIs, sentiment donut, top aspects & topics
+│       ├── sentiment.py      # VADER vs. Transformer comparison & agreement analysis
+│       ├── aspects.py        # Aspect frequency, praised vs. criticized breakdown
+│       ├── topics.py         # Topic explorer cards & 2D PCA cluster scatter plot
+│       ├── semantic_search.py# Natural-language query interface with similarity ranks
+│       ├── reviews.py        # Multi-dimensional filtering and CSV export
+│       └── insights.py       # Automated product intelligence summary
 │
 ├── src/
-│   ├── data/loader.py            # CSV loading, alias resolution & validation
-│   ├── preprocessing/cleaner.py  # Text cleaning, Unicode & HTML normalization
-│   ├── sentiment/analyzer.py     # VADER + DistilBERT pipeline & uncertainty logic
-│   ├── aspects/extractor.py      # Aspect extraction & context sentiment scoring
-│   ├── emotions/detector.py      # Emotion classification with heuristic fallback
-│   ├── topics/modeler.py         # Built-in LDA topic modeling & optional BERTopic
-│   ├── keywords/extractor.py     # Adaptive TF-IDF & KeyBERT keyphrase extractors
-│   ├── clustering/embedder.py    # SentenceTransformer dense embeddings & KMeans
+│   ├── data/loader.py        # CSV loading, alias resolution & validation
+│   ├── preprocessing/cleaner.py # Text cleaning, Unicode & HTML normalization
+│   ├── sentiment/analyzer.py # VADER + DistilBERT pipeline & uncertainty logic
+│   ├── aspects/extractor.py  # Aspect extraction & context sentiment scoring
+│   ├── emotions/detector.py  # Emotion classification with heuristic fallback
+│   ├── topics/modeler.py     # Built-in LDA topic modeling & optional BERTopic
+│   ├── keywords/extractor.py # Adaptive TF-IDF & KeyBERT keyphrase extractors
+│   ├── clustering/embedder.py# SentenceTransformer dense embeddings & KMeans
 │   ├── search/semantic_search.py # Vector similarity search engine
 │   └── insights/intelligence.py  # Data-grounded executive insight generator
 │
-├── configs/settings.py           # Central configuration: model names, thresholds, aliases
-├── tests/test_pipeline.py        # Automated test suite (37 unit & integration tests)
+├── configs/settings.py       # Central configuration: model names, thresholds, aliases
+├── tests/test_pipeline.py    # Automated test suite (37 unit & integration tests)
 ├── data/
-│   ├── raw/                      # Input datasets (includes sample_reviews.csv)
-│   └── processed/                # Pipeline CSV outputs (.gitkeep)
+│   ├── raw/                  # Input datasets (includes sample_reviews.csv)
+│   └── processed/            # Pipeline CSV outputs (.gitkeep)
 ├── notebooks/
-│   └── reviewpulse_demo.ipynb    # Interactive Jupyter exploration notebook
-├── requirements.txt              # Production Python dependencies
-├── run_pipeline.py               # Standalone command-line pipeline runner
-├── streamlit_app.py              # Root launcher forwarding to app/
-├── ATTRIBUTION.md                # Project origin and third-party license notice
+│   └── reviewpulse_demo.ipynb# Interactive Jupyter exploration notebook
+├── requirements.txt          # Production Python dependencies
+├── run_pipeline.py           # Standalone command-line pipeline runner
+├── ATTRIBUTION.md            # Project origin and third-party license notice
 └── README.md
 ```
 
@@ -131,7 +133,7 @@ Raw Customer Reviews
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/ReviewPulse.git
+git clone https://github.com/aadiur/ReviewPulse.git
 cd ReviewPulse
 ```
 
@@ -157,9 +159,16 @@ pip install -r requirements.txt
 
 ## 🚀 Execution Guide
 
-### Option 1: Interactive Streamlit Dashboard
+### Option 1: Modern Enterprise B2B Interface (Recommended)
 
-Run from the repository root:
+Run the redesigned high-trust executive dashboard with zero emojis and modern B2B analytics styling:
+```bash
+streamlit run app_professional.py
+```
+
+### Option 2: Classic Reference Interface
+
+Run the original interface (preserved unchanged as backup reference):
 ```bash
 streamlit run streamlit_app.py
 ```
@@ -168,15 +177,15 @@ streamlit run streamlit_app.py
 Open your browser at `http://localhost:8501`. From the sidebar:
 1. Upload your own CSV file, supply a local file path, or select the built-in sample dataset.
 2. Toggle transformer sentiment or emotion detection as needed.
-3. Click **▶ Run Analysis**.
+3. Click **Run Analysis**.
 4. Navigate through the 7 insight pages:
    - **Overview**: Summary metrics and high-level charts.
    - **Sentiment Intelligence**: Side-by-side VADER vs. Transformer analysis, agreement metrics, and confidence distributions.
    - **Aspect Intelligence**: Praised vs. criticized features, net aspect sentiment scores.
    - **Topic Explorer**: Discovered topics, representative customer excerpts, and 2D cluster scatter plot.
-   - **Semantic Search**: Real-time query search across reviews using semantic embedding similarity.
+   - **Semantic Explorer**: Real-time query search across reviews using semantic embedding similarity.
    - **Review Explorer**: Multi-filter review table (filter by sentiment, emotion, rating, aspect, topic, or uncertainty) with CSV export.
-   - **Product Intelligence**: Actionable business summary and automated observations.
+   - **Product Insights**: Actionable business summary and automated observations.
 
 ### Option 2: Command-Line Pipeline Runner
 
