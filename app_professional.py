@@ -8,6 +8,7 @@ Run with:
 
 from __future__ import annotations
 
+import html
 import io
 import sys
 from pathlib import Path
@@ -33,11 +34,10 @@ import streamlit as st
 from streamlit import config as _st_config
 
 # Programmatically enforce light, professional theme for this interface
-# Overrides any global dark theme so tables, canvas dataframes, and inputs render with clean light surfaces
 try:
     _st_config.set_option("theme.base", "light")
     _st_config.set_option("theme.primaryColor", "#C25E3E")
-    _st_config.set_option("theme.backgroundColor", "#FFFFFF")
+    _st_config.set_option("theme.backgroundColor", "#F8F7F5")
     _st_config.set_option("theme.secondaryBackgroundColor", "#FFF8F3")
     _st_config.set_option("theme.textColor", "#1F2937")
 except Exception:
@@ -62,25 +62,26 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Color System: Light, Warm, Professional ───────────────────────────────────
-# Main background: #FFFFFF (clean pure white)
+# ── Color System: Light, Warm, Professional Analytics Theme ───────────────────
+# Application Background: #F8F7F5 (subtle warm neutral, not stark white)
 # Sidebar: #FFF8F3 (light warm neutral / soft cream)
-# Secondary surfaces: #FAFAF9 / #FFFFFF with #EAE4DC borders
-# Primary text: #1F2937 (dark charcoal, WCAG AAA compliant)
-# Secondary text: #4B5563 (high contrast readable slate)
-# Primary accent: #C25E3E (warm muted terracotta/coral)
-# Active tint: #FDF2EC
+# Content Surfaces & Chart Containers: #FFFFFF (crisp white)
+# Borders: #EAE4DC / #E5E0D8 (soft warm gray)
+# Primary Text: #1F2937 (dark charcoal, WCAG AAA compliant)
+# Secondary Text: #4B5563 (medium gray, high contrast)
+# Primary Accent: #C25E3E (warm muted terracotta/coral)
+# Active Nav Tint: #FDF2EC
 
 COLOR_PRIMARY = "#C25E3E"
 COLOR_PRIMARY_HOVER = "#A94E31"
 COLOR_PRIMARY_TINT = "#FDF2EC"
 COLOR_PRIMARY_BORDER = "#F5D5C6"
 
-COLOR_MAIN_BG = "#FFFFFF"
+COLOR_APP_BG = "#F8F7F5"
 COLOR_SIDEBAR_BG = "#FFF8F3"
 COLOR_SIDEBAR_BORDER = "#EAE4DC"
-COLOR_SURFACE = "#FAFAF9"
-COLOR_BORDER = "#E5E7EB"
+COLOR_SURFACE = "#FFFFFF"
+COLOR_BORDER = "#EAE4DC"
 
 COLOR_TEXT_PRIMARY = "#1F2937"
 COLOR_TEXT_MUTED = "#4B5563"
@@ -121,19 +122,28 @@ ENTERPRISE_CSS = """
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root, [data-testid="stAppViewContainer"], .stApp, body, html {
-    --background-color: #FFFFFF !important;
+    --background-color: #F8F7F5 !important;
     --secondary-background-color: #FFF8F3 !important;
     --text-color: #1F2937 !important;
     --primary-color: #C25E3E !important;
-    background-color: #FFFFFF !important;
+    background-color: #F8F7F5 !important;
     color: #1F2937 !important;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Page Layout & Vertical Spacing — Prevents Header Clipping */
+.block-container {
+    padding-top: 2.2rem !important;
+    padding-bottom: 3.5rem !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+    max-width: 1320px !important;
+}
+
 /* Header bar */
 [data-testid="stHeader"] {
-    background-color: #FFFFFF !important;
-    border-bottom: 1px solid #F3F4F6 !important;
+    background-color: #F8F7F5 !important;
+    border-bottom: 1px solid #EAE4DC !important;
 }
 
 /* Sidebar: Warm Light Cream Theme */
@@ -188,47 +198,19 @@ ENTERPRISE_CSS = """
     accent-color: #C25E3E !important;
 }
 
-/* Dataframe & Tables: Light styling */
-[data-testid="stDataFrame"],
-[data-testid="stDataFrame"] > div,
-.dvn-scroller,
-.dvn-inner,
-[data-testid="stDataFrame"] canvas {
+/* Analytical Container Surfaces (st.container with border) */
+[data-testid="stVerticalBlockBorderWrapper"] {
     background-color: #FFFFFF !important;
-    color: #1F2937 !important;
+    border: 1px solid #EAE4DC !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+    margin-bottom: 14px !important;
 }
 
-[data-testid="stDataFrame"] {
-    border: 1px solid #E7E5E4 !important;
-    border-radius: 6px !important;
-    background: #FFFFFF !important;
-}
-
-/* Standard HTML tables */
-[data-testid="stTable"] {
+[data-testid="stVerticalBlockBorderWrapper"] > div {
     background-color: #FFFFFF !important;
-    color: #1F2937 !important;
-    border: 1px solid #E7E5E4 !important;
-    border-radius: 6px !important;
-}
-
-[data-testid="stTable"] th {
-    background-color: #FAF8F5 !important;
-    color: #1F2937 !important;
-    font-weight: 600 !important;
-    border-bottom: 2px solid #E7E5E4 !important;
-    padding: 10px 14px !important;
-}
-
-[data-testid="stTable"] td {
-    background-color: #FFFFFF !important;
-    color: #1F2937 !important;
-    border-bottom: 1px solid #F3F4F6 !important;
-    padding: 8px 14px !important;
-}
-
-[data-testid="stTable"] tr:hover td {
-    background-color: #FDF9F6 !important;
+    border-radius: 8px !important;
+    padding: 16px 20px !important;
 }
 
 /* Form Controls & Inputs */
@@ -249,7 +231,7 @@ ENTERPRISE_CSS = """
 
 .stFileUploader section {
     border: 1px dashed #D1D5DB !important;
-    background-color: #FAF8F5 !important;
+    background-color: #FFFFFF !important;
 }
 
 /* Buttons */
@@ -281,66 +263,53 @@ button[kind="secondary"]:hover,
     border-color: #9CA3AF !important;
 }
 
-/* Expanders */
-[data-testid="stExpander"] {
-    background: #FFFFFF !important;
-    border: 1px solid #E7E5E4 !important;
-    border-radius: 6px !important;
-}
-
-[data-testid="stExpander"] summary {
-    background-color: #FAF8F5 !important;
-    color: #1F2937 !important;
-    font-weight: 600 !important;
-}
-
-/* KPI Cards */
-.rp-kpi-card {
+/* Compact Analytical Metric Blocks */
+.rp-metric-block {
     background: #FFFFFF;
-    border: 1px solid #E7E5E4;
-    border-radius: 8px;
-    padding: 18px 20px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-    height: 100%;
+    border: 1px solid #EAE4DC;
+    border-radius: 6px;
+    padding: 12px 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    min-height: 84px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
-.rp-kpi-label {
-    font-size: 11px;
-    font-weight: 600;
+.rp-metric-label {
+    font-size: 10px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
     color: #6B7280;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
-.rp-kpi-value {
-    font-size: 26px;
+.rp-metric-value {
+    font-size: 22px;
     font-weight: 700;
     color: #111827;
     line-height: 1.1;
 }
 
-.rp-kpi-delta {
-    font-size: 12px;
-    font-weight: 500;
-    margin-top: 6px;
+.rp-metric-sub {
+    font-size: 11px;
+    color: #6B7280;
+    margin-top: 3px;
 }
-
-.rp-delta-pos { color: #16A34A; }
-.rp-delta-neg { color: #DC2626; }
-.rp-delta-neu { color: #6B7280; }
 
 /* Section Headers */
 .rp-section-header {
-    margin-top: 10px;
-    margin-bottom: 20px;
+    margin-top: 4px;
+    margin-bottom: 16px;
 }
 
 .rp-section-title {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     color: #111827;
-    margin-bottom: 4px;
+    margin-bottom: 3px;
+    letter-spacing: -0.01em;
 }
 
 .rp-section-subtitle {
@@ -348,16 +317,33 @@ button[kind="secondary"]:hover,
     color: #4B5563;
 }
 
+/* Chart Container Header Labels */
+.rp-chart-header {
+    margin-bottom: 10px;
+}
+
+.rp-chart-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 2px;
+}
+
+.rp-chart-subtitle {
+    font-size: 12px;
+    color: #6B7280;
+}
+
 /* Callout Banners */
 .rp-callout {
-    background: #FAFAF9;
+    background: #FFFFFF;
     border-left: 4px solid #C25E3E;
-    border-radius: 4px 8px 8px 4px;
+    border-radius: 4px 6px 6px 4px;
     padding: 14px 18px;
-    margin-bottom: 18px;
-    border-top: 1px solid #E7E5E4;
-    border-right: 1px solid #E7E5E4;
-    border-bottom: 1px solid #E7E5E4;
+    margin-bottom: 14px;
+    border-top: 1px solid #EAE4DC;
+    border-right: 1px solid #EAE4DC;
+    border-bottom: 1px solid #EAE4DC;
 }
 
 .rp-callout-warning {
@@ -375,7 +361,7 @@ button[kind="secondary"]:hover,
 /* Badges */
 .rp-badge {
     display: inline-block;
-    padding: 3px 8px;
+    padding: 2px 7px;
     border-radius: 4px;
     font-size: 11px;
     font-weight: 600;
@@ -396,7 +382,7 @@ st.markdown(ENTERPRISE_CSS, unsafe_allow_html=True)
 
 def apply_chart_theme(
     fig: go.Figure,
-    height: Optional[int] = 340,
+    height: Optional[int] = 320,
     x_title: Optional[str] = None,
     y_title: Optional[str] = None,
 ) -> go.Figure:
@@ -407,10 +393,11 @@ def apply_chart_theme(
     """
     xaxis_config = dict(
         showgrid=True,
-        gridcolor="#F3F4F6",
+        gridcolor="#F0ECE6",
         gridwidth=1,
         zeroline=True,
-        zerolinecolor="#E5E7EB",
+        zerolinecolor="#E5E0D8",
+        zerolinewidth=1,
         showline=True,
         linecolor="#9CA3AF",
         linewidth=1.5,
@@ -422,17 +409,17 @@ def apply_chart_theme(
     if x_title:
         xaxis_config["title"] = dict(
             text=x_title,
-            font=dict(color="#111827", size=13, family="Inter, sans-serif"),
+            font=dict(color="#111827", size=12, family="Inter, sans-serif"),
+            standoff=10,
         )
-    else:
-        xaxis_config["title"] = dict(font=dict(color="#111827", size=13))
 
     yaxis_config = dict(
         showgrid=True,
-        gridcolor="#F3F4F6",
+        gridcolor="#F0ECE6",
         gridwidth=1,
         zeroline=True,
-        zerolinecolor="#E5E7EB",
+        zerolinecolor="#E5E0D8",
+        zerolinewidth=1,
         showline=True,
         linecolor="#9CA3AF",
         linewidth=1.5,
@@ -444,20 +431,19 @@ def apply_chart_theme(
     if y_title:
         yaxis_config["title"] = dict(
             text=y_title,
-            font=dict(color="#111827", size=13, family="Inter, sans-serif"),
+            font=dict(color="#111827", size=12, family="Inter, sans-serif"),
+            standoff=10,
         )
-    else:
-        yaxis_config["title"] = dict(font=dict(color="#111827", size=13))
 
     fig.update_layout(
         font=dict(
             family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",
-            size=12,
+            size=11,
             color="#1F2937",
         ),
         paper_bgcolor="#FFFFFF",
         plot_bgcolor="#FFFFFF",
-        margin=dict(l=25, r=25, t=35, b=35),
+        margin=dict(l=20, r=20, t=25, b=25),
         height=height,
         hoverlabel=dict(
             bgcolor="#1F2937",
@@ -474,13 +460,103 @@ def apply_chart_theme(
             y=1.02,
             xanchor="right",
             x=1,
-            font=dict(color="#1F2937", size=12, family="Inter, sans-serif"),
+            font=dict(color="#1F2937", size=11, family="Inter, sans-serif"),
             bgcolor="rgba(255,255,255,0.9)",
-            bordercolor="#E5E7EB",
+            bordercolor="#EAE4DC",
             borderwidth=1,
         ),
     )
     return fig
+
+
+def render_professional_table(df: pd.DataFrame, max_height: Optional[int] = 450) -> None:
+    """
+    Renders a high-contrast, beautiful light professional table with clear headers,
+    readable body text, subtle borders, alternating row tints, and sticky header scrolling.
+    Guarantees 100% visibility of all data rows and column headers regardless of Streamlit theme settings.
+    """
+    if df.empty:
+        st.markdown(
+            "<div style='padding: 16px; color: #6B7280; font-size: 13px; text-align: center;'>No records to display.</div>",
+            unsafe_allow_html=True,
+        )
+        return
+
+    col_labels = {
+        "review_id": "ID",
+        "original_review": "Customer Review",
+        "cleaned_review": "Cleaned Text",
+        "rating": "Rating",
+        "sentiment": "Sentiment",
+        "sentiment_confidence": "Confidence",
+        "vader_sentiment": "VADER",
+        "transformer_sentiment": "Transformer",
+        "transformer_confidence": "Confidence",
+        "vader_compound": "VADER Score",
+        "aspect": "Aspect",
+        "phrase": "Extracted Phrase",
+        "confidence": "Confidence",
+        "emotion": "Emotion",
+        "aspects_summary": "Detected Aspects",
+        "topic_label": "Topic",
+        "cluster": "Cluster",
+        "uncertainty_flag": "QA Status",
+    }
+
+    headers_html = "".join(
+        f"<th style='padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #1F2937; background-color: #FAF7F2; border-bottom: 2px solid #EAE4DC; position: sticky; top: 0; z-index: 2; white-space: nowrap;'>{html.escape(col_labels.get(c, c.replace('_', ' ').title()))}</th>"
+        for c in df.columns
+    )
+
+    rows_html = []
+    for idx, row in df.iterrows():
+        bg_color = "#FFFFFF" if len(rows_html) % 2 == 0 else "#FAF8F5"
+        tds = []
+        for col in df.columns:
+            val = row[col]
+            if pd.isna(val):
+                cell_content = "<span style='color: #9CA3AF;'>—</span>"
+            elif col in ("sentiment", "vader_sentiment", "transformer_sentiment"):
+                s = str(val)
+                if s == "Positive":
+                    cell_content = "<span class='rp-badge rp-badge-positive'>Positive</span>"
+                elif s == "Negative":
+                    cell_content = "<span class='rp-badge rp-badge-negative'>Negative</span>"
+                else:
+                    cell_content = f"<span class='rp-badge rp-badge-neutral'>{html.escape(s)}</span>"
+            elif col == "uncertainty_flag":
+                cell_content = "<span class='rp-badge rp-badge-warning'>Uncertain</span>" if val else "<span style='color: #4B5563; font-size: 12px;'>Confirmed</span>"
+            elif col == "rating" and pd.notna(val):
+                cell_content = f"<span style='font-weight: 600; color: #111827;'>{val}</span> <span style='color: #6B7280; font-size: 11px;'>/ 5.0</span>"
+            elif isinstance(val, (float, np.floating)):
+                cell_content = f"<span style='font-family: monospace; font-size: 12px; color: #1F2937;'>{val:.3f}</span>"
+            elif col == "original_review":
+                review_str = str(val)
+                truncated = review_str[:220] + ("..." if len(review_str) > 220 else "")
+                cell_content = f"<div style='max-width: 480px; min-width: 260px; line-height: 1.45; color: #1F2937; word-wrap: break-word;'>{html.escape(truncated)}</div>"
+            elif col == "phrase":
+                cell_content = f"<div style='max-width: 220px; line-height: 1.4; color: #1F2937; font-style: italic;'>{html.escape(str(val))}</div>"
+            else:
+                cell_content = f"<span style='color: #1F2937; font-size: 12px;'>{html.escape(str(val))}</span>"
+
+            tds.append(f"<td style='padding: 9px 14px; border-bottom: 1px solid #F0ECE6; font-size: 13px; color: #1F2937; vertical-align: middle;'>{cell_content}</td>")
+
+        rows_html.append(f"<tr style='background-color: {bg_color};'>{''.join(tds)}</tr>")
+
+    max_h_style = f"max-height: {max_height}px;" if max_height else ""
+    table_wrapper = f"""
+    <div style="{max_h_style} overflow-y: auto; overflow-x: auto; border: 1px solid #EAE4DC; border-radius: 6px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.02); margin-top: 6px; margin-bottom: 14px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-family: Inter, -apple-system, sans-serif;">
+            <thead>
+                <tr>{headers_html}</tr>
+            </thead>
+            <tbody>
+                {''.join(rows_html)}
+            </tbody>
+        </table>
+    </div>
+    """
+    st.markdown(table_wrapper, unsafe_allow_html=True)
 
 
 # Session state keys
@@ -722,10 +798,10 @@ def render_empty_state():
     """Renders the professional landing state when no analysis is active."""
     st.markdown(
         """
-        <div style="background: #FFFFFF; border: 1px solid #E7E5E4; border-radius: 8px; padding: 32px 36px; margin-top: 10px; margin-bottom: 24px;">
-            <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #C25E3E;">Enterprise Analytics</div>
-            <div style="font-size: 28px; font-weight: 700; color: #111827; margin-top: 4px;">ReviewPulse Intelligence Platform</div>
-            <div style="font-size: 15px; color: #4B5563; margin-top: 6px; max-width: 800px; line-height: 1.5;">
+        <div style="background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 8px; padding: 28px 32px; margin-top: 4px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #C25E3E;">Enterprise Product Intelligence</div>
+            <div style="font-size: 26px; font-weight: 700; color: #111827; margin-top: 4px;">ReviewPulse Analytics Platform</div>
+            <div style="font-size: 14px; color: #4B5563; margin-top: 6px; max-width: 820px; line-height: 1.5;">
                 Extract actionable product signals, track customer sentiment distribution, surface granular aspect performance, and isolate high-value issues across unstructured customer reviews.
             </div>
         </div>
@@ -733,18 +809,24 @@ def render_empty_state():
         unsafe_allow_html=True,
     )
 
-    st.markdown("<div class='rp-section-title'>Platform Capabilities</div>", unsafe_allow_html=True)
-    st.markdown("<div class='rp-section-subtitle'>Automated natural language intelligence pipeline ready for deployment.</div>", unsafe_allow_html=True)
-    st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="rp-section-header">
+            <div class="rp-section-title">Platform Capabilities</div>
+            <div class="rp-section-subtitle">Automated natural language intelligence pipeline ready for execution.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.markdown(
             """
-            <div class="rp-kpi-card">
-                <div class="rp-kpi-label">Sentiment Engine</div>
-                <div style="font-size: 14px; font-weight: 600; color: #111827; margin-top: 4px;">Dual-Layer Detection</div>
-                <div style="font-size: 12px; color: #4B5563; margin-top: 6px; line-height: 1.45;">
+            <div class="rp-metric-block" style="min-height: 130px; justify-content: flex-start;">
+                <div class="rp-metric-label">Sentiment Engine</div>
+                <div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 2px;">Dual-Layer Detection</div>
+                <div style="font-size: 12px; color: #4B5563; margin-top: 5px; line-height: 1.4;">
                     Combines rule-based VADER lexicon with contextual DistilBERT transformers, tracking inter-model agreement and flagging uncertainty.
                 </div>
             </div>
@@ -754,10 +836,10 @@ def render_empty_state():
     with c2:
         st.markdown(
             """
-            <div class="rp-kpi-card">
-                <div class="rp-kpi-label">Aspect Extraction</div>
-                <div style="font-size: 14px; font-weight: 600; color: #111827; margin-top: 4px;">Feature-Level Insights</div>
-                <div style="font-size: 12px; color: #4B5563; margin-top: 6px; line-height: 1.45;">
+            <div class="rp-metric-block" style="min-height: 130px; justify-content: flex-start;">
+                <div class="rp-metric-label">Aspect Extraction</div>
+                <div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 2px;">Feature-Level Insights</div>
+                <div style="font-size: 12px; color: #4B5563; margin-top: 5px; line-height: 1.4;">
                     Isolates mentions of battery, build, performance, software, pricing, and service with localized sentiment mapping.
                 </div>
             </div>
@@ -767,10 +849,10 @@ def render_empty_state():
     with c3:
         st.markdown(
             """
-            <div class="rp-kpi-card">
-                <div class="rp-kpi-label">Topic Discovery</div>
-                <div style="font-size: 14px; font-weight: 600; color: #111827; margin-top: 4px;">Unsupervised Clusters</div>
-                <div style="font-size: 12px; color: #4B5563; margin-top: 6px; line-height: 1.45;">
+            <div class="rp-metric-block" style="min-height: 130px; justify-content: flex-start;">
+                <div class="rp-metric-label">Topic Discovery</div>
+                <div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 2px;">Unsupervised Clusters</div>
+                <div style="font-size: 12px; color: #4B5563; margin-top: 5px; line-height: 1.4;">
                     Groups feedback into coherent operational topics with 2D embedding space projections and TF-IDF keyphrase extraction.
                 </div>
             </div>
@@ -780,10 +862,10 @@ def render_empty_state():
     with c4:
         st.markdown(
             """
-            <div class="rp-kpi-card">
-                <div class="rp-kpi-label">Semantic Discovery</div>
-                <div style="font-size: 14px; font-weight: 600; color: #111827; margin-top: 4px;">Neural Search Engine</div>
-                <div style="font-size: 12px; color: #4B5563; margin-top: 6px; line-height: 1.45;">
+            <div class="rp-metric-block" style="min-height: 130px; justify-content: flex-start;">
+                <div class="rp-metric-label">Semantic Discovery</div>
+                <div style="font-size: 14px; font-weight: 700; color: #111827; margin-top: 2px;">Neural Search Engine</div>
+                <div style="font-size: 12px; color: #4B5563; margin-top: 5px; line-height: 1.4;">
                     Enables cosine-similarity natural language queries across the entire review collection to pinpoint specific feedback.
                 </div>
             </div>
@@ -791,11 +873,11 @@ def render_empty_state():
             unsafe_allow_html=True,
         )
 
-    st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
     st.markdown(
         """
         <div class="rp-callout">
-            <div style="font-size: 14px; font-weight: 600; color: #9E4226;">Getting Started</div>
+            <div style="font-size: 13px; font-weight: 700; color: #9E4226;">Getting Started</div>
             <div style="font-size: 13px; color: #374151; margin-top: 4px;">
                 Select <b>Sample Dataset</b> in the sidebar and click <b>Run Analysis</b>, or upload your own CSV containing customer reviews.
             </div>
@@ -818,7 +900,7 @@ def render_overview_page(
         """
         <div class="rp-section-header">
             <div class="rp-section-title">Executive Overview</div>
-            <div class="rp-section-subtitle">Real-time aggregate product health metrics and sentiment indicators.</div>
+            <div class="rp-section-subtitle">Real-time aggregate product health metrics and sentiment indicators across customer reviews.</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -828,31 +910,30 @@ def render_overview_page(
     avg_rating = insights.get("average_rating")
     pos_pct = insights.get("positive_pct", 0.0)
     neg_pct = insights.get("negative_pct", 0.0)
-    neu_pct = insights.get("neutral_pct", 0.0)
     unc_count = insights.get("uncertain_count", 0)
     unc_pct = insights.get("uncertain_pct", 0.0)
 
-    # KPI Metrics Row
+    # Compact Analytical KPI Row
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
         st.markdown(
             f"""
-            <div class="rp-kpi-card">
-                <div class="rp-kpi-label">Total Reviews</div>
-                <div class="rp-kpi-value">{total_reviews:,}</div>
-                <div class="rp-kpi-delta rp-delta-neu">Processed corpus</div>
+            <div class="rp-metric-block">
+                <div class="rp-metric-label">TOTAL REVIEWS</div>
+                <div class="rp-metric-value">{total_reviews:,}</div>
+                <div class="rp-metric-sub">Processed corpus</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
     with c2:
-        rating_str = f"{avg_rating:.2f} / 5.0" if avg_rating is not None else "N/A"
+        rating_str = f"{avg_rating:.2f} / 5" if avg_rating is not None else "N/A"
         st.markdown(
             f"""
-            <div class="rp-kpi-card">
-                <div class="rp-kpi-label">Average Rating</div>
-                <div class="rp-kpi-value">{rating_str}</div>
-                <div class="rp-kpi-delta rp-delta-neu">Mean customer score</div>
+            <div class="rp-metric-block">
+                <div class="rp-metric-label">AVERAGE RATING</div>
+                <div class="rp-metric-value">{rating_str}</div>
+                <div class="rp-metric-sub">Mean customer score</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -860,10 +941,10 @@ def render_overview_page(
     with c3:
         st.markdown(
             f"""
-            <div class="rp-kpi-card">
-                <div class="rp-kpi-label">Positive Sentiment</div>
-                <div class="rp-kpi-value">{pos_pct}%</div>
-                <div class="rp-kpi-delta rp-delta-pos">Favorable perception</div>
+            <div class="rp-metric-block">
+                <div class="rp-metric-label">POSITIVE REVIEWS</div>
+                <div class="rp-metric-value" style="color: #16A34A;">{pos_pct}%</div>
+                <div class="rp-metric-sub">Favorable feedback</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -871,10 +952,10 @@ def render_overview_page(
     with c4:
         st.markdown(
             f"""
-            <div class="rp-kpi-card">
-                <div class="rp-kpi-label">Negative Sentiment</div>
-                <div class="rp-kpi-value">{neg_pct}%</div>
-                <div class="rp-kpi-delta rp-delta-neg">Unfavorable perception</div>
+            <div class="rp-metric-block">
+                <div class="rp-metric-label">NEGATIVE REVIEWS</div>
+                <div class="rp-metric-value" style="color: #DC2626;">{neg_pct}%</div>
+                <div class="rp-metric-sub">Unfavorable feedback</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -882,25 +963,24 @@ def render_overview_page(
     with c5:
         st.markdown(
             f"""
-            <div class="rp-kpi-card">
-                <div class="rp-kpi-label">Uncertain / Flagged</div>
-                <div class="rp-kpi-value">{unc_count:,}</div>
-                <div class="rp-kpi-delta rp-delta-neu">{unc_pct}% of total</div>
+            <div class="rp-metric-block">
+                <div class="rp-metric-label">UNCERTAIN REVIEWS</div>
+                <div class="rp-metric-value" style="color: #D97706;">{unc_pct}%</div>
+                <div class="rp-metric-sub">{unc_count:,} reviews flagged</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    st.markdown("<div style='height: 24px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
-    # Uncertainty Callout if present
     if unc_count > 0:
         st.markdown(
             f"""
             <div class="rp-callout rp-callout-warning">
-                <div style="font-weight: 600; color: #92400E; font-size: 13px;">Attention Required: Model Divergence Detected</div>
+                <div style="font-weight: 700; color: #92400E; font-size: 13px;">Attention Required: Model Divergence Detected</div>
                 <div style="font-size: 12px; color: #78350F; margin-top: 3px;">
-                    {unc_count:,} reviews ({unc_pct}%) exhibit model disagreement or lower confidence thresholds. These are segregated for manual QA inspection in the Review Explorer.
+                    {unc_count:,} reviews ({unc_pct}%) exhibit model disagreement or low confidence thresholds. These are segregated for manual QA inspection in the Review Explorer.
                 </div>
             </div>
             """,
@@ -911,129 +991,156 @@ def render_overview_page(
     r1_col1, r1_col2 = st.columns(2)
 
     with r1_col1:
-        st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Sentiment Distribution</div>",
-            unsafe_allow_html=True,
-        )
-        if "sentiment" in df.columns:
-            sent_counts = df["sentiment"].value_counts().reset_index()
-            sent_counts.columns = ["Sentiment", "Count"]
-            fig_pie = px.pie(
-                sent_counts,
-                names="Sentiment",
-                values="Count",
-                color="Sentiment",
-                color_discrete_map=PALETTE_SENTIMENT,
-                hole=0.45,
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Sentiment Distribution</div>
+                    <div class="rp-chart-subtitle">Breakdown of positive, negative, and neutral customer feedback.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-            fig_pie.update_traces(
-                textposition="inside",
-                textinfo="percent+label",
-                textfont=dict(color="#FFFFFF", size=12, family="Inter, sans-serif"),
-                marker=dict(line=dict(color="#FFFFFF", width=2)),
-            )
-            fig_pie = apply_chart_theme(fig_pie, height=300)
-            st.plotly_chart(fig_pie, use_container_width=True)
-        else:
-            st.info("Sentiment data unavailable.")
+            if "sentiment" in df.columns:
+                sent_counts = df["sentiment"].value_counts().reset_index()
+                sent_counts.columns = ["Sentiment", "Count"]
+                fig_pie = px.pie(
+                    sent_counts,
+                    names="Sentiment",
+                    values="Count",
+                    color="Sentiment",
+                    color_discrete_map=PALETTE_SENTIMENT,
+                    hole=0.45,
+                )
+                fig_pie.update_traces(
+                    textposition="inside",
+                    textinfo="percent+label",
+                    textfont=dict(color="#FFFFFF", size=12, family="Inter, sans-serif"),
+                    marker=dict(line=dict(color="#FFFFFF", width=2)),
+                )
+                fig_pie = apply_chart_theme(fig_pie, height=280)
+                st.plotly_chart(fig_pie, use_container_width=True)
+            else:
+                st.info("Sentiment data unavailable.")
 
     with r1_col2:
-        st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Leading Discussion Topics</div>",
-            unsafe_allow_html=True,
-        )
-        if topic_summary is not None and not topic_summary.empty:
-            top_t = topic_summary.head(7).sort_values("count", ascending=True)
-            fig_top = px.bar(
-                top_t,
-                x="count",
-                y="topic_label",
-                orientation="h",
-                color_discrete_sequence=[COLOR_PRIMARY],
-                labels={"count": "Review Count", "topic_label": "Topic"},
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Leading Discussion Topics</div>
+                    <div class="rp-chart-subtitle">Volume of reviews grouped by unsupervised topic discovery.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-            fig_top = apply_chart_theme(fig_top, height=300, x_title="Review Count", y_title="Topic")
-            fig_top.update_layout(showlegend=False)
-            st.plotly_chart(fig_top, use_container_width=True)
-        else:
-            st.info("Topic distribution unavailable.")
-
-    st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+            if topic_summary is not None and not topic_summary.empty:
+                top_t = topic_summary.head(7).sort_values("count", ascending=True)
+                fig_top = px.bar(
+                    top_t,
+                    x="count",
+                    y="topic_label",
+                    orientation="h",
+                    color_discrete_sequence=[COLOR_PRIMARY],
+                    labels={"count": "Review Count", "topic_label": "Topic"},
+                )
+                fig_top = apply_chart_theme(fig_top, height=280, x_title="Review Count", y_title="Topic")
+                fig_top.update_layout(showlegend=False)
+                st.plotly_chart(fig_top, use_container_width=True)
+            else:
+                st.info("Topic distribution unavailable.")
 
     # Chart Row 2: Aspect Sentiment Overview & Emotion Breakdown
     r2_col1, r2_col2 = st.columns(2)
 
     with r2_col1:
-        st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Aspect Sentiment Breakdown</div>",
-            unsafe_allow_html=True,
-        )
-        if aspect_summary is not None and not aspect_summary.empty:
-            melt_cols = [c for c in ["Positive", "Negative", "Neutral"] if c in aspect_summary.columns]
-            aspect_plot = aspect_summary.head(8).melt(
-                id_vars=["aspect"],
-                value_vars=melt_cols,
-                var_name="Sentiment",
-                value_name="Count",
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Aspect Sentiment Breakdown</div>
+                    <div class="rp-chart-subtitle">Customer perception mapped across extracted product components.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-            fig_aspect = px.bar(
-                aspect_plot,
-                x="Count",
-                y="aspect",
-                color="Sentiment",
-                color_discrete_map=PALETTE_SENTIMENT,
-                orientation="h",
-                barmode="stack",
-                labels={"Count": "Mentions", "aspect": "Product Aspect"},
-            )
-            fig_aspect = apply_chart_theme(fig_aspect, height=310, x_title="Mention Count", y_title="Product Aspect")
-            fig_aspect.update_layout(yaxis={"categoryorder": "total ascending"})
-            st.plotly_chart(fig_aspect, use_container_width=True)
-        else:
-            st.info("No domain aspects extracted from corpus.")
+            if aspect_summary is not None and not aspect_summary.empty:
+                melt_cols = [c for c in ["Positive", "Negative", "Neutral"] if c in aspect_summary.columns]
+                aspect_plot = aspect_summary.head(8).melt(
+                    id_vars=["aspect"],
+                    value_vars=melt_cols,
+                    var_name="Sentiment",
+                    value_name="Count",
+                )
+                fig_aspect = px.bar(
+                    aspect_plot,
+                    x="Count",
+                    y="aspect",
+                    color="Sentiment",
+                    color_discrete_map=PALETTE_SENTIMENT,
+                    orientation="h",
+                    barmode="stack",
+                    labels={"Count": "Mentions", "aspect": "Product Aspect"},
+                )
+                fig_aspect = apply_chart_theme(fig_aspect, height=290, x_title="Mention Count", y_title="Product Aspect")
+                fig_aspect.update_layout(yaxis={"categoryorder": "total ascending"})
+                st.plotly_chart(fig_aspect, use_container_width=True)
+            else:
+                st.info("No domain aspects extracted from corpus.")
 
     with r2_col2:
-        st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Customer Emotion Spectrum</div>",
-            unsafe_allow_html=True,
-        )
-        if "emotion" in df.columns:
-            emo_counts = df["emotion"].value_counts().reset_index()
-            emo_counts.columns = ["Emotion", "Count"]
-            fig_emo = px.bar(
-                emo_counts,
-                x="Emotion",
-                y="Count",
-                color="Emotion",
-                color_discrete_map=PALETTE_EMOTIONS,
-                labels={"Count": "Reviews", "Emotion": "Detected Emotion"},
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Customer Emotion Spectrum</div>
+                    <div class="rp-chart-subtitle">Emotional tones identified across customer reviews.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-            fig_emo = apply_chart_theme(fig_emo, height=310, x_title="Detected Emotion", y_title="Reviews")
-            fig_emo.update_layout(showlegend=False)
-            st.plotly_chart(fig_emo, use_container_width=True)
-        else:
-            st.info("Emotion classification data unavailable.")
+            if "emotion" in df.columns:
+                emo_counts = df["emotion"].value_counts().reset_index()
+                emo_counts.columns = ["Emotion", "Count"]
+                fig_emo = px.bar(
+                    emo_counts,
+                    x="Emotion",
+                    y="Count",
+                    color="Emotion",
+                    color_discrete_map=PALETTE_EMOTIONS,
+                    labels={"Count": "Reviews", "Emotion": "Detected Emotion"},
+                )
+                fig_emo = apply_chart_theme(fig_emo, height=290, x_title="Detected Emotion", y_title="Reviews")
+                fig_emo.update_layout(showlegend=False)
+                st.plotly_chart(fig_emo, use_container_width=True)
+            else:
+                st.info("Emotion classification data unavailable.")
 
     # Rating Breakdown if present
     if "rating" in df.columns and df["rating"].notna().sum() > 0:
-        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
-        st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Customer Rating Distribution</div>",
-            unsafe_allow_html=True,
-        )
-        rd_df = df["rating"].dropna().value_counts().reset_index()
-        rd_df.columns = ["Rating", "Count"]
-        rd_df["Rating"] = rd_df["Rating"].astype(str) + " Stars"
-        fig_r = px.bar(
-            rd_df.sort_values("Rating"),
-            x="Rating",
-            y="Count",
-            color_discrete_sequence=[COLOR_PRIMARY],
-            labels={"Count": "Reviews", "Rating": "Star Rating"},
-        )
-        fig_r = apply_chart_theme(fig_r, height=270, x_title="Star Rating", y_title="Reviews")
-        fig_r.update_layout(showlegend=False)
-        st.plotly_chart(fig_r, use_container_width=True)
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Customer Rating Distribution</div>
+                    <div class="rp-chart-subtitle">Frequency of verified star ratings in active dataset.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            rd_df = df["rating"].dropna().value_counts().reset_index()
+            rd_df.columns = ["Rating", "Count"]
+            rd_df["Rating"] = rd_df["Rating"].astype(str) + " Stars"
+            fig_r = px.bar(
+                rd_df.sort_values("Rating"),
+                x="Rating",
+                y="Count",
+                color_discrete_sequence=[COLOR_PRIMARY],
+                labels={"Count": "Reviews", "Rating": "Star Rating"},
+            )
+            fig_r = apply_chart_theme(fig_r, height=250, x_title="Star Rating", y_title="Reviews")
+            fig_r.update_layout(showlegend=False)
+            st.plotly_chart(fig_r, use_container_width=True)
 
 
 # ── Page 2: Sentiment Intelligence ───────────────────────────────────────────
@@ -1044,7 +1151,7 @@ def render_sentiment_page(df: pd.DataFrame):
         """
         <div class="rp-section-header">
             <div class="rp-section-title">Sentiment Intelligence</div>
-            <div class="rp-section-subtitle">Multi-model audit comparing rule-based VADER lexicon and transformer neural classification.</div>
+            <div class="rp-section-subtitle">Multi-model audit comparing deterministic VADER lexicon and transformer neural classification.</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1056,203 +1163,228 @@ def render_sentiment_page(df: pd.DataFrame):
     # Section 1: Side by side model distribution
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown(
-            """
-            <div style="font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 4px;">VADER Lexicon Model</div>
-            <div style="font-size: 12px; color: #4B5563; margin-bottom: 8px;">Deterministic rule-based sentiment mapping.</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if has_vader:
-            vc = df["vader_sentiment"].value_counts().reset_index()
-            vc.columns = ["Sentiment", "Count"]
-            fig_v = px.bar(
-                vc,
-                x="Sentiment",
-                y="Count",
-                color="Sentiment",
-                color_discrete_map=PALETTE_SENTIMENT,
-                labels={"Count": "Reviews", "Sentiment": "Sentiment"},
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">VADER Lexicon Model</div>
+                    <div class="rp-chart-subtitle">Deterministic rule-based sentiment mapping.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-            fig_v = apply_chart_theme(fig_v, height=280, x_title="Sentiment Classification", y_title="Reviews")
-            fig_v.update_layout(showlegend=False)
-            st.plotly_chart(fig_v, use_container_width=True)
-        else:
-            st.info("VADER sentiment data unavailable.")
+            if has_vader:
+                vc = df["vader_sentiment"].value_counts().reset_index()
+                vc.columns = ["Sentiment", "Count"]
+                fig_v = px.bar(
+                    vc,
+                    x="Sentiment",
+                    y="Count",
+                    color="Sentiment",
+                    color_discrete_map=PALETTE_SENTIMENT,
+                    labels={"Count": "Reviews", "Sentiment": "Sentiment"},
+                )
+                fig_v = apply_chart_theme(fig_v, height=260, x_title="Sentiment Classification", y_title="Reviews")
+                fig_v.update_layout(showlegend=False)
+                st.plotly_chart(fig_v, use_container_width=True)
+            else:
+                st.info("VADER sentiment data unavailable.")
 
     with col2:
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Transformer Model</div>
+                    <div class="rp-chart-subtitle">Contextual neural representation (DistilBERT).</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if has_transformer:
+                tc = df["transformer_sentiment"].value_counts().reset_index()
+                tc.columns = ["Sentiment", "Count"]
+                fig_t = px.bar(
+                    tc,
+                    x="Sentiment",
+                    y="Count",
+                    color="Sentiment",
+                    color_discrete_map=PALETTE_SENTIMENT,
+                    labels={"Count": "Reviews", "Sentiment": "Sentiment"},
+                )
+                fig_t = apply_chart_theme(fig_t, height=260, x_title="Sentiment Classification", y_title="Reviews")
+                fig_t.update_layout(showlegend=False)
+                st.plotly_chart(fig_t, use_container_width=True)
+            else:
+                st.info("Transformer model execution was skipped or unavailable.")
+
+    # Section 2: Model Agreement & Disagreement Audit
+    with st.container(border=True):
         st.markdown(
             """
-            <div style="font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 4px;">Transformer Model</div>
-            <div style="font-size: 12px; color: #4B5563; margin-bottom: 8px;">Contextual neural representation (DistilBERT).</div>
+            <div class="rp-chart-header">
+                <div class="rp-chart-title">Model Agreement & Divergence Analysis</div>
+                <div class="rp-chart-subtitle">Evaluating classification consensus between lexicon and transformer systems.</div>
+            </div>
             """,
             unsafe_allow_html=True,
         )
-        if has_transformer:
-            tc = df["transformer_sentiment"].value_counts().reset_index()
-            tc.columns = ["Sentiment", "Count"]
-            fig_t = px.bar(
-                tc,
-                x="Sentiment",
-                y="Count",
-                color="Sentiment",
-                color_discrete_map=PALETTE_SENTIMENT,
-                labels={"Count": "Reviews", "Sentiment": "Sentiment"},
-            )
-            fig_t = apply_chart_theme(fig_t, height=280, x_title="Sentiment Classification", y_title="Reviews")
-            fig_t.update_layout(showlegend=False)
-            st.plotly_chart(fig_t, use_container_width=True)
-        else:
-            st.info("Transformer model execution was skipped or unavailable.")
 
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+        if has_vader and has_transformer:
+            agree_mask = df["vader_sentiment"] == df["transformer_sentiment"]
+            n_agree = int(agree_mask.sum())
+            n_disagree = len(df) - n_agree
+            pct_agree = round(100 * n_agree / len(df), 1)
+            pct_disagree = round(100 - pct_agree, 1)
 
-    # Section 2: Model Agreement & Disagreement Audit
-    st.markdown(
-        """
-        <div style="font-size: 16px; font-weight: 600; color: #111827; margin-bottom: 4px;">Model Agreement & Divergence</div>
-        <div style="font-size: 12px; color: #4B5563; margin-bottom: 12px;">Evaluating classification consensus between lexicon and transformer systems.</div>
-        """,
-        unsafe_allow_html=True,
-    )
+            m1, m2, m3 = st.columns(3)
+            with m1:
+                st.markdown(
+                    f"""
+                    <div class="rp-metric-block">
+                        <div class="rp-metric-label">MODEL AGREEMENT</div>
+                        <div class="rp-metric-value" style="color: #16A34A;">{pct_agree}%</div>
+                        <div class="rp-metric-sub">{n_agree:,} matching classifications</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with m2:
+                st.markdown(
+                    f"""
+                    <div class="rp-metric-block">
+                        <div class="rp-metric-label">MODEL DISAGREEMENT</div>
+                        <div class="rp-metric-value" style="color: #DC2626;">{pct_disagree}%</div>
+                        <div class="rp-metric-sub">{n_disagree:,} divergent classifications</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with m3:
+                unc_total = int(df["uncertainty_flag"].sum()) if "uncertainty_flag" in df.columns else 0
+                st.markdown(
+                    f"""
+                    <div class="rp-metric-block">
+                        <div class="rp-metric-label">FLAGGED UNCERTAIN</div>
+                        <div class="rp-metric-value" style="color: #D97706;">{unc_total:,}</div>
+                        <div class="rp-metric-sub">Low confidence or disagreement</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-    if has_vader and has_transformer:
-        agree_mask = df["vader_sentiment"] == df["transformer_sentiment"]
-        n_agree = int(agree_mask.sum())
-        n_disagree = len(df) - n_agree
-        pct_agree = round(100 * n_agree / len(df), 1)
-        pct_disagree = round(100 - pct_agree, 1)
-
-        m1, m2, m3 = st.columns(3)
-        with m1:
-            st.markdown(
-                f"""
-                <div class="rp-kpi-card">
-                    <div class="rp-kpi-label">Model Agreement</div>
-                    <div class="rp-kpi-value">{pct_agree}%</div>
-                    <div class="rp-kpi-delta rp-delta-pos">{n_agree:,} matching classifications</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with m2:
-            st.markdown(
-                f"""
-                <div class="rp-kpi-card">
-                    <div class="rp-kpi-label">Model Disagreement</div>
-                    <div class="rp-kpi-value">{pct_disagree}%</div>
-                    <div class="rp-kpi-delta rp-delta-neg">{n_disagree:,} divergent classifications</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        with m3:
-            unc_total = int(df["uncertainty_flag"].sum()) if "uncertainty_flag" in df.columns else 0
-            st.markdown(
-                f"""
-                <div class="rp-kpi-card">
-                    <div class="rp-kpi-label">Flagged Uncertain</div>
-                    <div class="rp-kpi-value">{unc_total:,}</div>
-                    <div class="rp-kpi-delta rp-delta-neu">Low confidence or disagreement</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-        if n_disagree > 0:
-            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-            with st.expander(f"Inspect Model Disagreements ({n_disagree} instances)"):
+            if n_disagree > 0:
+                st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div style='font-size: 13px; font-weight: 700; color: #111827; margin-bottom: 6px;'>Model Disagreement Instances ({n_disagree} reviews)</div>",
+                    unsafe_allow_html=True,
+                )
                 disagree_cols = [
                     c for c in ["review_id", "original_review", "vader_sentiment", "transformer_sentiment", "transformer_confidence"]
                     if c in df.columns
                 ]
-                st.dataframe(df[~agree_mask][disagree_cols].head(30), use_container_width=True)
-    else:
-        st.info("Both VADER and Transformer must be active to compute agreement metrics.")
-
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+                render_professional_table(df[~agree_mask][disagree_cols].head(25), max_height=320)
+        else:
+            st.info("Both VADER and Transformer must be active to compute agreement metrics.")
 
     # Section 3: Confidence Distribution & Score Analysis
     col_c1, col_c2 = st.columns(2)
     with col_c1:
-        st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Prediction Confidence Spectrum</div>",
-            unsafe_allow_html=True,
-        )
-        if has_transformer and "transformer_confidence" in df.columns:
-            fig_conf = px.histogram(
-                df,
-                x="transformer_confidence",
-                nbins=35,
-                color_discrete_sequence=[COLOR_PRIMARY],
-                labels={"transformer_confidence": "Confidence Score"},
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Prediction Confidence Spectrum</div>
+                    <div class="rp-chart-subtitle">Distribution of model confidence scores across all reviews.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-            fig_conf.add_vline(
-                x=0.65,
-                line_dash="dash",
-                line_color=COLOR_NEGATIVE,
-                annotation_text="Confidence Cutoff (0.65)",
-                annotation_position="top left",
-                annotation_font=dict(color="#991B1B", size=11, family="Inter, sans-serif"),
-            )
-            fig_conf = apply_chart_theme(fig_conf, height=290, x_title="Confidence Score", y_title="Review Count")
-            st.plotly_chart(fig_conf, use_container_width=True)
-        elif has_vader and "vader_compound" in df.columns:
-            fig_vscore = px.histogram(
-                df,
-                x="vader_compound",
-                nbins=35,
-                color_discrete_sequence=[COLOR_PRIMARY],
-                labels={"vader_compound": "VADER Compound Score"},
-            )
-            fig_vscore = apply_chart_theme(fig_vscore, height=290, x_title="VADER Compound Score", y_title="Review Count")
-            st.plotly_chart(fig_vscore, use_container_width=True)
+            if has_transformer and "transformer_confidence" in df.columns:
+                fig_conf = px.histogram(
+                    df,
+                    x="transformer_confidence",
+                    nbins=35,
+                    color_discrete_sequence=[COLOR_PRIMARY],
+                    labels={"transformer_confidence": "Confidence Score"},
+                )
+                fig_conf.add_vline(
+                    x=0.65,
+                    line_dash="dash",
+                    line_color=COLOR_NEGATIVE,
+                    annotation_text="Confidence Cutoff (0.65)",
+                    annotation_position="top left",
+                    annotation_font=dict(color="#991B1B", size=11, family="Inter, sans-serif"),
+                )
+                fig_conf = apply_chart_theme(fig_conf, height=270, x_title="Confidence Score", y_title="Review Count")
+                st.plotly_chart(fig_conf, use_container_width=True)
+            elif has_vader and "vader_compound" in df.columns:
+                fig_vscore = px.histogram(
+                    df,
+                    x="vader_compound",
+                    nbins=35,
+                    color_discrete_sequence=[COLOR_PRIMARY],
+                    labels={"vader_compound": "VADER Compound Score"},
+                )
+                fig_vscore = apply_chart_theme(fig_vscore, height=270, x_title="VADER Compound Score", y_title="Review Count")
+                st.plotly_chart(fig_vscore, use_container_width=True)
 
     with col_c2:
-        st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Review Length vs Sentiment</div>",
-            unsafe_allow_html=True,
-        )
-        text_col = "original_review" if "original_review" in df.columns else "cleaned_review"
-        if text_col in df.columns:
-            df_len = df.copy()
-            df_len["char_length"] = df_len[text_col].astype(str).str.len()
-            fig_len = px.histogram(
-                df_len,
-                x="char_length",
-                color="sentiment" if "sentiment" in df_len.columns else None,
-                color_discrete_map=PALETTE_SENTIMENT,
-                nbins=40,
-                barmode="overlay",
-                labels={"char_length": "Character Count"},
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Review Length vs Sentiment</div>
+                    <div class="rp-chart-subtitle">Character count distribution across sentiment classes.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-            fig_len = apply_chart_theme(fig_len, height=290, x_title="Character Count", y_title="Review Count")
-            st.plotly_chart(fig_len, use_container_width=True)
+            text_col = "original_review" if "original_review" in df.columns else "cleaned_review"
+            if text_col in df.columns:
+                df_len = df.copy()
+                df_len["char_length"] = df_len[text_col].astype(str).str.len()
+                fig_len = px.histogram(
+                    df_len,
+                    x="char_length",
+                    color="sentiment" if "sentiment" in df_len.columns else None,
+                    color_discrete_map=PALETTE_SENTIMENT,
+                    nbins=35,
+                    barmode="overlay",
+                    labels={"char_length": "Character Count"},
+                )
+                fig_len = apply_chart_theme(fig_len, height=270, x_title="Character Count", y_title="Review Count")
+                st.plotly_chart(fig_len, use_container_width=True)
 
     # Section 4: Rating vs Sentiment & Temporal Trends
     if "date" in df.columns and df["date"].notna().sum() > 5 and "sentiment" in df.columns:
-        st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-        st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Sentiment Movement Over Time</div>",
-            unsafe_allow_html=True,
-        )
-        try:
-            time_df = df[df["date"].notna()].copy()
-            time_df["month"] = time_df["date"].dt.to_period("M").dt.to_timestamp()
-            monthly_counts = time_df.groupby(["month", "sentiment"]).size().reset_index(name="count")
-            fig_time = px.line(
-                monthly_counts,
-                x="month",
-                y="count",
-                color="sentiment",
-                color_discrete_map=PALETTE_SENTIMENT,
-                markers=True,
-                labels={"count": "Monthly Reviews", "month": "Timeline"},
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Sentiment Movement Over Time</div>
+                    <div class="rp-chart-subtitle">Monthly volume trends segmented by sentiment classification.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-            fig_time = apply_chart_theme(fig_time, height=310, x_title="Timeline", y_title="Monthly Reviews")
-            st.plotly_chart(fig_time, use_container_width=True)
-        except Exception:
-            pass
+            try:
+                time_df = df[df["date"].notna()].copy()
+                time_df["month"] = time_df["date"].dt.to_period("M").dt.to_timestamp()
+                monthly_counts = time_df.groupby(["month", "sentiment"]).size().reset_index(name="count")
+                fig_time = px.line(
+                    monthly_counts,
+                    x="month",
+                    y="count",
+                    color="sentiment",
+                    color_discrete_map=PALETTE_SENTIMENT,
+                    markers=True,
+                    labels={"count": "Monthly Reviews", "month": "Timeline"},
+                )
+                fig_time = apply_chart_theme(fig_time, height=280, x_title="Timeline", y_title="Monthly Reviews")
+                st.plotly_chart(fig_time, use_container_width=True)
+            except Exception:
+                pass
 
 
 # ── Page 3: Aspect Intelligence ───────────────────────────────────────────────
@@ -1273,7 +1405,7 @@ def render_aspect_page(df: pd.DataFrame, aspects_df: pd.DataFrame, aspect_summar
         st.markdown(
             """
             <div class="rp-callout rp-callout-warning">
-                <div style="font-weight: 600; color: #92400E; font-size: 13px;">No Domain Aspects Detected</div>
+                <div style="font-weight: 700; color: #92400E; font-size: 13px;">No Domain Aspects Detected</div>
                 <div style="font-size: 12px; color: #78350F; margin-top: 2px;">
                     The aspect extractor searched for keywords related to battery, display, audio, build quality, software, pricing, and service, but found zero matches in this corpus.
                 </div>
@@ -1293,10 +1425,10 @@ def render_aspect_page(df: pd.DataFrame, aspects_df: pd.DataFrame, aspect_summar
     with k1:
         st.markdown(
             f"""
-            <div class="rp-kpi-card">
-                <div class="rp-kpi-label">Aspect Mentions</div>
-                <div class="rp-kpi-value">{total_mentions:,}</div>
-                <div class="rp-kpi-delta rp-delta-neu">Extracted phrase instances</div>
+            <div class="rp-metric-block">
+                <div class="rp-metric-label">ASPECT MENTIONS</div>
+                <div class="rp-metric-value">{total_mentions:,}</div>
+                <div class="rp-metric-sub">Extracted phrase instances</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1304,10 +1436,10 @@ def render_aspect_page(df: pd.DataFrame, aspects_df: pd.DataFrame, aspect_summar
     with k2:
         st.markdown(
             f"""
-            <div class="rp-kpi-card">
-                <div class="rp-kpi-label">Unique Feature Classes</div>
-                <div class="rp-kpi-value">{unique_aspects}</div>
-                <div class="rp-kpi-delta rp-delta-neu">Categorized components</div>
+            <div class="rp-metric-block">
+                <div class="rp-metric-label">FEATURE CLASSES</div>
+                <div class="rp-metric-value">{unique_aspects}</div>
+                <div class="rp-metric-sub">Categorized components</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1315,111 +1447,128 @@ def render_aspect_page(df: pd.DataFrame, aspects_df: pd.DataFrame, aspect_summar
     with k3:
         st.markdown(
             f"""
-            <div class="rp-kpi-card">
-                <div class="rp-kpi-label">Aspect Review Coverage</div>
-                <div class="rp-kpi-value">{coverage_pct}%</div>
-                <div class="rp-kpi-delta rp-delta-neu">{reviews_with_aspect:,} reviews contain aspects</div>
+            <div class="rp-metric-block">
+                <div class="rp-metric-label">REVIEW COVERAGE</div>
+                <div class="rp-metric-value">{coverage_pct}%</div>
+                <div class="rp-metric-sub">{reviews_with_aspect:,} reviews contain aspects</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
     # Net Sentiment Score Chart
-    st.markdown(
-        """
-        <div style="font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 4px;">Net Aspect Sentiment Score</div>
-        <div style="font-size: 12px; color: #4B5563; margin-bottom: 8px;">Calculated as (Positive Mentions - Negative Mentions) / Total Mentions. Normalized from -1.00 to +1.00.</div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if "net_sentiment" in aspect_summary.columns:
-        ns_df = aspect_summary.sort_values("net_sentiment", ascending=True).copy()
-        ns_df["color"] = ns_df["net_sentiment"].apply(lambda v: COLOR_POSITIVE if v >= 0 else COLOR_NEGATIVE)
-        fig_net = px.bar(
-            ns_df,
-            x="net_sentiment",
-            y="aspect",
-            orientation="h",
-            color="color",
-            color_discrete_map="identity",
-            labels={"net_sentiment": "Net Sentiment Score", "aspect": "Feature Aspect"},
+    with st.container(border=True):
+        st.markdown(
+            """
+            <div class="rp-chart-header">
+                <div class="rp-chart-title">Net Aspect Sentiment Score</div>
+                <div class="rp-chart-subtitle">Calculated as (Positive Mentions - Negative Mentions) / Total Mentions. Normalized from -1.00 to +1.00.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-        fig_net.add_vline(x=0, line_dash="solid", line_color="#4B5563", line_width=1.5)
-        fig_net = apply_chart_theme(fig_net, height=320, x_title="Net Sentiment Score (-1.00 to +1.00)", y_title="Feature Aspect")
-        fig_net.update_layout(showlegend=False)
-        st.plotly_chart(fig_net, use_container_width=True)
-
-    st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+        if "net_sentiment" in aspect_summary.columns:
+            ns_df = aspect_summary.sort_values("net_sentiment", ascending=True).copy()
+            ns_df["color"] = ns_df["net_sentiment"].apply(lambda v: COLOR_POSITIVE if v >= 0 else COLOR_NEGATIVE)
+            fig_net = px.bar(
+                ns_df,
+                x="net_sentiment",
+                y="aspect",
+                orientation="h",
+                color="color",
+                color_discrete_map="identity",
+                labels={"net_sentiment": "Net Sentiment Score", "aspect": "Feature Aspect"},
+            )
+            fig_net.add_vline(x=0, line_dash="solid", line_color="#4B5563", line_width=1.5)
+            fig_net = apply_chart_theme(fig_net, height=290, x_title="Net Sentiment Score (-1.00 to +1.00)", y_title="Feature Aspect")
+            fig_net.update_layout(showlegend=False)
+            st.plotly_chart(fig_net, use_container_width=True)
 
     # Praised vs Criticized Breakdown
     p_col, c_col = st.columns(2)
     with p_col:
-        st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Top Praised Product Features</div>",
-            unsafe_allow_html=True,
-        )
-        pos_aspects = (
-            aspects_df[aspects_df["sentiment"] == "Positive"]
-            .groupby("aspect")
-            .size()
-            .sort_values(ascending=True)
-            .reset_index(name="Count")
-            .tail(8)
-        )
-        if not pos_aspects.empty:
-            fig_p = px.bar(
-                pos_aspects,
-                x="Count",
-                y="aspect",
-                orientation="h",
-                color_discrete_sequence=[COLOR_POSITIVE],
-                labels={"Count": "Positive Mentions", "aspect": "Feature Aspect"},
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Top Praised Product Features</div>
+                    <div class="rp-chart-subtitle">Aspects receiving the highest frequency of positive customer feedback.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-            fig_p = apply_chart_theme(fig_p, height=280, x_title="Positive Mentions", y_title="Feature Aspect")
-            fig_p.update_layout(showlegend=False)
-            st.plotly_chart(fig_p, use_container_width=True)
-        else:
-            st.info("No positive aspect mentions detected.")
+            pos_aspects = (
+                aspects_df[aspects_df["sentiment"] == "Positive"]
+                .groupby("aspect")
+                .size()
+                .sort_values(ascending=True)
+                .reset_index(name="Count")
+                .tail(7)
+            )
+            if not pos_aspects.empty:
+                fig_p = px.bar(
+                    pos_aspects,
+                    x="Count",
+                    y="aspect",
+                    orientation="h",
+                    color_discrete_sequence=[COLOR_POSITIVE],
+                    labels={"Count": "Positive Mentions", "aspect": "Feature Aspect"},
+                )
+                fig_p = apply_chart_theme(fig_p, height=260, x_title="Positive Mentions", y_title="Feature Aspect")
+                fig_p.update_layout(showlegend=False)
+                st.plotly_chart(fig_p, use_container_width=True)
+            else:
+                st.info("No positive aspect mentions detected.")
 
     with c_col:
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Top Criticized Product Issues</div>
+                    <div class="rp-chart-subtitle">Aspects receiving the highest frequency of negative customer feedback.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            neg_aspects = (
+                aspects_df[aspects_df["sentiment"] == "Negative"]
+                .groupby("aspect")
+                .size()
+                .sort_values(ascending=True)
+                .reset_index(name="Count")
+                .tail(7)
+            )
+            if not neg_aspects.empty:
+                fig_c = px.bar(
+                    neg_aspects,
+                    x="Count",
+                    y="aspect",
+                    orientation="h",
+                    color_discrete_sequence=[COLOR_NEGATIVE],
+                    labels={"Count": "Negative Mentions", "aspect": "Feature Aspect"},
+                )
+                fig_c = apply_chart_theme(fig_c, height=260, x_title="Negative Mentions", y_title="Feature Aspect")
+                fig_c.update_layout(showlegend=False)
+                st.plotly_chart(fig_c, use_container_width=True)
+            else:
+                st.info("No negative aspect mentions detected.")
+
+    # Detailed Aspect Table
+    with st.container(border=True):
         st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Top Criticized Product Issues</div>",
+            """
+            <div class="rp-chart-header">
+                <div class="rp-chart-title">Aspect Mentions Audit Table</div>
+                <div class="rp-chart-subtitle">Individual feature extractions, assigned sentiment, extracted context, and confidence.</div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
-        neg_aspects = (
-            aspects_df[aspects_df["sentiment"] == "Negative"]
-            .groupby("aspect")
-            .size()
-            .sort_values(ascending=True)
-            .reset_index(name="Count")
-            .tail(8)
-        )
-        if not neg_aspects.empty:
-            fig_c = px.bar(
-                neg_aspects,
-                x="Count",
-                y="aspect",
-                orientation="h",
-                color_discrete_sequence=[COLOR_NEGATIVE],
-                labels={"Count": "Negative Mentions", "aspect": "Feature Aspect"},
-            )
-            fig_c = apply_chart_theme(fig_c, height=280, x_title="Negative Mentions", y_title="Feature Aspect")
-            fig_c.update_layout(showlegend=False)
-            st.plotly_chart(fig_c, use_container_width=True)
-        else:
-            st.info("No negative aspect mentions detected.")
-
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-
-    # Detailed Table
-    st.markdown(
-        "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Aspect Mentions Audit Table</div>",
-        unsafe_allow_html=True,
-    )
-    cols_to_show = [c for c in ["review_id", "aspect", "sentiment", "phrase", "confidence"] if c in aspects_df.columns]
-    st.dataframe(aspects_df[cols_to_show].head(250), use_container_width=True, height=360)
+        cols_to_show = [c for c in ["review_id", "aspect", "sentiment", "phrase", "confidence"] if c in aspects_df.columns]
+        render_professional_table(aspects_df[cols_to_show].head(150), max_height=380)
 
 
 # ── Page 4: Topic Explorer ────────────────────────────────────────────────────
@@ -1441,103 +1590,120 @@ def render_topic_page(df: pd.DataFrame, topic_summary: pd.DataFrame, keywords_df
         return
 
     # Section 1: Topic Frequency
-    st.markdown(
-        "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Discovered Topic Volume</div>",
-        unsafe_allow_html=True,
-    )
-    t_plot = topic_summary.head(10).sort_values("count", ascending=True)
-    fig_tf = px.bar(
-        t_plot,
-        x="count",
-        y="topic_label",
-        orientation="h",
-        color_discrete_sequence=[COLOR_PRIMARY],
-        labels={"count": "Review Count", "topic_label": "Topic"},
-    )
-    fig_tf = apply_chart_theme(fig_tf, height=320, x_title="Review Count", y_title="Topic")
-    fig_tf.update_layout(showlegend=False)
-    st.plotly_chart(fig_tf, use_container_width=True)
-
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-
-    # Section 2: 2D Projection PCA Cluster Scatter
-    if "embed_x" in df.columns and "embed_y" in df.columns:
+    with st.container(border=True):
         st.markdown(
             """
-            <div style="font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 4px;">Semantic Review Space (PCA 2D Projection)</div>
-            <div style="font-size: 12px; color: #4B5563; margin-bottom: 8px;">Dimensionality reduction projecting high-dimensional text embeddings into a 2D coordinate plane.</div>
+            <div class="rp-chart-header">
+                <div class="rp-chart-title">Discovered Topic Volume</div>
+                <div class="rp-chart-subtitle">Review count distribution across automatically discovered semantic topics.</div>
+            </div>
             """,
             unsafe_allow_html=True,
         )
-        scatter_df = df.copy()
-        color_column = "topic_label" if "topic_label" in scatter_df.columns else "cluster"
-        if "original_review" in scatter_df.columns:
-            scatter_df["snippet"] = scatter_df["original_review"].astype(str).str[:140] + "..."
-
-        hover_data = ["snippet"]
-        if "sentiment" in scatter_df.columns:
-            hover_data.append("sentiment")
-
-        fig_pca = px.scatter(
-            scatter_df,
-            x="embed_x",
-            y="embed_y",
-            color=color_column,
-            color_discrete_sequence=PALETTE_TOPICS,
-            hover_data=hover_data,
-            opacity=0.8,
-            labels={"embed_x": "Principal Component 1", "embed_y": "Principal Component 2"},
+        t_plot = topic_summary.head(10).sort_values("count", ascending=True)
+        fig_tf = px.bar(
+            t_plot,
+            x="count",
+            y="topic_label",
+            orientation="h",
+            color_discrete_sequence=[COLOR_PRIMARY],
+            labels={"count": "Review Count", "topic_label": "Topic"},
         )
-        fig_pca.update_traces(marker=dict(size=7, line=dict(width=0.75, color="#FFFFFF")))
-        fig_pca = apply_chart_theme(fig_pca, height=400, x_title="Principal Component 1", y_title="Principal Component 2")
-        st.plotly_chart(fig_pca, use_container_width=True)
+        fig_tf = apply_chart_theme(fig_tf, height=290, x_title="Review Count", y_title="Topic")
+        fig_tf.update_layout(showlegend=False)
+        st.plotly_chart(fig_tf, use_container_width=True)
 
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+    # Section 2: 2D Projection PCA Cluster Scatter
+    if "embed_x" in df.columns and "embed_y" in df.columns:
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Semantic Review Space (PCA 2D Projection)</div>
+                    <div class="rp-chart-subtitle">Dimensionality reduction projecting high-dimensional text embeddings into a 2D coordinate plane.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            scatter_df = df.copy()
+            color_column = "topic_label" if "topic_label" in scatter_df.columns else "cluster"
+            if "original_review" in scatter_df.columns:
+                scatter_df["snippet"] = scatter_df["original_review"].astype(str).str[:140] + "..."
+
+            hover_data = ["snippet"]
+            if "sentiment" in scatter_df.columns:
+                hover_data.append("sentiment")
+
+            fig_pca = px.scatter(
+                scatter_df,
+                x="embed_x",
+                y="embed_y",
+                color=color_column,
+                color_discrete_sequence=PALETTE_TOPICS,
+                hover_data=hover_data,
+                opacity=0.8,
+                labels={"embed_x": "Principal Component 1", "embed_y": "Principal Component 2"},
+            )
+            fig_pca.update_traces(marker=dict(size=7, line=dict(width=0.75, color="#FFFFFF")))
+            fig_pca = apply_chart_theme(fig_pca, height=360, x_title="Principal Component 1", y_title="Principal Component 2")
+            st.plotly_chart(fig_pca, use_container_width=True)
 
     # Section 3: Topic Details & Keywords
     col_t_detail, col_kw = st.columns([3, 2])
 
     with col_t_detail:
-        st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Topic Representation & Snippets</div>",
-            unsafe_allow_html=True,
-        )
-        for _, row in topic_summary.head(6).iterrows():
-            label = row.get("topic_label", "Topic")
-            count = int(row.get("count", 0))
-            kws = row.get("keywords", "N/A")
-            rep_text = row.get("representative", "")
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Topic Representation & Snippets</div>
+                    <div class="rp-chart-subtitle">Characteristic key phrases and representative customer quotes.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            for _, row in topic_summary.head(5).iterrows():
+                label = row.get("topic_label", "Topic")
+                count = int(row.get("count", 0))
+                kws = row.get("keywords", "N/A")
+                rep_text = row.get("representative", "")
 
-            with st.expander(f"{label} ({count:,} reviews)"):
-                st.markdown(f"**Key Terms:** `{kws}`")
-                if rep_text:
-                    st.markdown("**Representative Review Snippets:**")
-                    snippets = str(rep_text).split(" | ")
-                    for snip in snippets[:2]:
-                        if snip.strip():
-                            st.markdown(f"> *{snip.strip()[:200]}*")
+                with st.expander(f"{label} ({count:,} reviews)"):
+                    st.markdown(f"**Key Terms:** `{kws}`")
+                    if rep_text:
+                        st.markdown("**Representative Review Snippets:**")
+                        snippets = str(rep_text).split(" | ")
+                        for snip in snippets[:2]:
+                            if snip.strip():
+                                st.markdown(f"> *{snip.strip()[:200]}*")
 
     with col_kw:
-        st.markdown(
-            "<div style='font-size: 14px; font-weight: 600; color: #111827; margin-bottom: 8px;'>Top Distinctive Keywords (TF-IDF)</div>",
-            unsafe_allow_html=True,
-        )
-        if keywords_df is not None and not keywords_df.empty:
-            score_col = "score" if "score" in keywords_df.columns else "tfidf_score"
-            kw_head = keywords_df.head(15).sort_values(score_col, ascending=True)
-            fig_kw = px.bar(
-                kw_head,
-                x=score_col,
-                y="keyword",
-                orientation="h",
-                color_discrete_sequence=[COLOR_PRIMARY],
-                labels={score_col: "Relevance Score", "keyword": "Keyword"},
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div class="rp-chart-header">
+                    <div class="rp-chart-title">Top Distinctive Keywords (TF-IDF)</div>
+                    <div class="rp-chart-subtitle">Statistically salient terms across dataset.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
             )
-            fig_kw = apply_chart_theme(fig_kw, height=360, x_title="Relevance Score", y_title="Keyword")
-            fig_kw.update_layout(showlegend=False)
-            st.plotly_chart(fig_kw, use_container_width=True)
-        else:
-            st.info("Keyword extraction data unavailable.")
+            if keywords_df is not None and not keywords_df.empty:
+                score_col = "score" if "score" in keywords_df.columns else "tfidf_score"
+                kw_head = keywords_df.head(12).sort_values(score_col, ascending=True)
+                fig_kw = px.bar(
+                    kw_head,
+                    x=score_col,
+                    y="keyword",
+                    orientation="h",
+                    color_discrete_sequence=[COLOR_PRIMARY],
+                    labels={score_col: "Relevance Score", "keyword": "Keyword"},
+                )
+                fig_kw = apply_chart_theme(fig_kw, height=310, x_title="Relevance Score", y_title="Keyword")
+                fig_kw.update_layout(showlegend=False)
+                st.plotly_chart(fig_kw, use_container_width=True)
+            else:
+                st.info("Keyword extraction data unavailable.")
 
 
 # ── Page 5: Semantic Explorer ─────────────────────────────────────────────────
@@ -1554,22 +1720,22 @@ def render_semantic_explorer_page(df: pd.DataFrame, searcher: SemanticSearch):
         unsafe_allow_html=True,
     )
 
-    # Search Configuration Bar
-    search_col, slider_col = st.columns([4, 1])
-    with search_col:
-        query = st.text_input(
-            "Semantic Query",
-            placeholder="Type intent or issue (e.g., poor battery after update, exceptional build quality, delayed delivery)",
-            label_visibility="collapsed",
-        )
-    with slider_col:
-        top_k = st.slider("Top Results", min_value=3, max_value=30, value=8)
+    with st.container(border=True):
+        search_col, slider_col = st.columns([4, 1])
+        with search_col:
+            query = st.text_input(
+                "Semantic Query",
+                placeholder="Type customer intent (e.g., poor battery after update, exceptional build quality, delayed delivery)",
+                label_visibility="collapsed",
+            )
+        with slider_col:
+            top_k = st.slider("Top Results", min_value=3, max_value=30, value=8)
 
     if not query.strip():
         st.markdown(
             """
             <div class="rp-callout">
-                <div style="font-size: 13px; font-weight: 600; color: #9E4226;">Semantic Search Capability</div>
+                <div style="font-size: 13px; font-weight: 700; color: #9E4226;">Semantic Search Capability</div>
                 <div style="font-size: 12px; color: #374151; margin-top: 4px;">
                     This interface evaluates conceptual semantic similarity rather than exact keyword matching. Try querying customer pain points:
                 </div>
@@ -1594,7 +1760,7 @@ def render_semantic_explorer_page(df: pd.DataFrame, searcher: SemanticSearch):
 
     st.markdown(
         f"""
-        <div style="margin-bottom: 16px; font-size: 13px; font-weight: 500; color: #4B5563;">
+        <div style="margin-top: 10px; margin-bottom: 12px; font-size: 13px; font-weight: 500; color: #4B5563;">
             Surfaced <span style="font-weight: 700; color: #111827;">{len(results)}</span> semantic matches for query: <i>"{query}"</i>
         </div>
         """,
@@ -1610,7 +1776,6 @@ def render_semantic_explorer_page(df: pd.DataFrame, searcher: SemanticSearch):
         review_text = str(row.get("original_review", row.get("cleaned_review", "")))
         aspects_val = row.get("aspects_summary", "")
 
-        # Sentiment badge style
         if sentiment == "Positive":
             badge_class = "rp-badge-positive"
         elif sentiment == "Negative":
@@ -1624,17 +1789,17 @@ def render_semantic_explorer_page(df: pd.DataFrame, searcher: SemanticSearch):
 
         st.markdown(
             f"""
-            <div style="background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 16px 20px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div style="background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 14px 18px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                     <div>
                         <span class="rp-badge {badge_class}">{sentiment}</span>
                         <span style="font-size: 12px; color: #4B5563; margin-left: 8px;">{rating_tag}{topic_tag}{emotion_tag}Cosine Similarity: <b>{sim_score:.4f}</b></span>
                     </div>
                 </div>
                 <div style="font-size: 13px; color: #1F2937; line-height: 1.5; border-left: 3px solid #D6D0C7; padding-left: 12px; margin-top: 6px;">
-                    {review_text}
+                    {html.escape(review_text)}
                 </div>
-                {"<div style='font-size: 11px; color: #6B7280; margin-top: 8px;'>Aspects: " + str(aspects_val) + "</div>" if aspects_val and str(aspects_val).strip() else ""}
+                {"<div style='font-size: 11px; color: #6B7280; margin-top: 8px;'>Aspects: " + html.escape(str(aspects_val)) + "</div>" if aspects_val and str(aspects_val).strip() else ""}
             </div>
             """,
             unsafe_allow_html=True,
@@ -1657,8 +1822,17 @@ def render_review_explorer_page(df: pd.DataFrame, aspects_df: pd.DataFrame):
 
     filtered = df.copy()
 
-    # Filter Controls Block
-    with st.expander("Filter Controls", expanded=True):
+    # Filter Controls Block inside an analytical container
+    with st.container(border=True):
+        st.markdown(
+            """
+            <div class="rp-chart-header">
+                <div class="rp-chart-title">Filter Parameters</div>
+                <div class="rp-chart-subtitle">Refine review cohort by sentiment, emotion, topic, uncertainty, and rating.</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         f_row1_c1, f_row1_c2, f_row1_c3, f_row1_c4 = st.columns(4)
 
         with f_row1_c1:
@@ -1712,8 +1886,8 @@ def render_review_explorer_page(df: pd.DataFrame, aspects_df: pd.DataFrame):
     # Result count indicator
     st.markdown(
         f"""
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; margin-bottom: 12px;">
-            <div style="font-size: 13px; font-weight: 600; color: #111827;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 8px;">
+            <div style="font-size: 13px; font-weight: 700; color: #111827;">
                 Showing {len(filtered):,} of {len(df):,} reviews matching criteria
             </div>
         </div>
@@ -1721,7 +1895,7 @@ def render_review_explorer_page(df: pd.DataFrame, aspects_df: pd.DataFrame):
         unsafe_allow_html=True,
     )
 
-    # Column configuration
+    # Column selection
     candidate_cols = [
         "review_id",
         "original_review",
@@ -1737,20 +1911,9 @@ def render_review_explorer_page(df: pd.DataFrame, aspects_df: pd.DataFrame):
     if not show_cols:
         show_cols = list(filtered.columns[:7])
 
-    st.dataframe(
-        filtered[show_cols].head(500),
-        use_container_width=True,
-        height=480,
-        column_config={
-            "original_review": st.column_config.TextColumn("Review Text", width="large"),
-            "sentiment_confidence": st.column_config.ProgressColumn(
-                "Confidence",
-                min_value=0.0,
-                max_value=1.0,
-                format="%.2f",
-            ) if "sentiment_confidence" in show_cols else None,
-        },
-    )
+    # Visible Light Table
+    with st.container(border=True):
+        render_professional_table(filtered[show_cols].head(300), max_height=520)
 
     # Download button
     csv_bytes = filtered[show_cols].to_csv(index=False).encode("utf-8")
@@ -1783,7 +1946,6 @@ def render_insights_page(
 
     pos_pct = insights.get("positive_pct")
     neg_pct = insights.get("negative_pct")
-    neu_pct = insights.get("neutral_pct")
 
     # Executive Verdict Banner
     if pos_pct is not None and neg_pct is not None:
@@ -1828,108 +1990,101 @@ def render_insights_page(
     col_str, col_weak = st.columns(2)
 
     with col_str:
-        st.markdown(
-            """
-            <div style="background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 20px; height: 100%;">
-                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #16A34A; letter-spacing: 0.05em;">Product Strengths</div>
-                <div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 4px; margin-bottom: 12px;">Most Praised Aspects</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        praised = insights.get("most_praised_aspects", {})
-        if praised:
-            for asp, count in list(praised.items())[:5]:
-                name = asp.replace("_", " ").title()
-                st.markdown(
-                    f"""
-                    <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #F3F4F6; font-size: 13px;">
-                        <span style="font-weight: 500; color: #1F2937;">{name}</span>
-                        <span class="rp-badge rp-badge-positive">{count:,} positive mentions</span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-        else:
-            st.caption("No praised aspects recorded.")
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #16A34A; letter-spacing: 0.06em;">Product Strengths</div>
+                <div style="font-size: 16px; font-weight: 700; color: #111827; margin-top: 2px; margin-bottom: 12px;">Most Praised Aspects</div>
+                """,
+                unsafe_allow_html=True,
+            )
+            praised = insights.get("most_praised_aspects", {})
+            if praised:
+                for asp, count in list(praised.items())[:5]:
+                    name = asp.replace("_", " ").title()
+                    st.markdown(
+                        f"""
+                        <div style="display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #F0ECE6; font-size: 13px;">
+                            <span style="font-weight: 500; color: #1F2937;">{name}</span>
+                            <span class="rp-badge rp-badge-positive">{count:,} positive mentions</span>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+            else:
+                st.caption("No praised aspects recorded.")
 
     with col_weak:
-        st.markdown(
-            """
-            <div style="background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 20px; height: 100%;">
-                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #DC2626; letter-spacing: 0.05em;">Improvement Priorities</div>
-                <div style="font-size: 18px; font-weight: 700; color: #111827; margin-top: 4px; margin-bottom: 12px;">Most Criticized Aspects</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        criticized = insights.get("most_criticized_aspects", {})
-        if criticized:
-            for asp, count in list(criticized.items())[:5]:
-                name = asp.replace("_", " ").title()
-                st.markdown(
-                    f"""
-                    <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #F3F4F6; font-size: 13px;">
-                        <span style="font-weight: 500; color: #1F2937;">{name}</span>
-                        <span class="rp-badge rp-badge-negative">{count:,} negative mentions</span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-        else:
-            st.caption("No criticized aspects recorded.")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #DC2626; letter-spacing: 0.06em;">Improvement Priorities</div>
+                <div style="font-size: 16px; font-weight: 700; color: #111827; margin-top: 2px; margin-bottom: 12px;">Most Criticized Aspects</div>
+                """,
+                unsafe_allow_html=True,
+            )
+            criticized = insights.get("most_criticized_aspects", {})
+            if criticized:
+                for asp, count in list(criticized.items())[:5]:
+                    name = asp.replace("_", " ").title()
+                    st.markdown(
+                        f"""
+                        <div style="display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #F0ECE6; font-size: 13px;">
+                            <span style="font-weight: 500; color: #1F2937;">{name}</span>
+                            <span class="rp-badge rp-badge-negative">{count:,} negative mentions</span>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+            else:
+                st.caption("No criticized aspects recorded.")
 
     # Secondary Insights Grid: Topics & Uncertainties
     c_top, c_unc = st.columns(2)
 
     with c_top:
-        st.markdown(
-            """
-            <div style="background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 20px;">
-                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #C25E3E; letter-spacing: 0.05em;">Themes</div>
-                <div style="font-size: 16px; font-weight: 700; color: #111827; margin-top: 4px; margin-bottom: 12px;">Top Discussed Topics</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        top_topics = insights.get("top_topics", [])
-        if top_topics:
-            for item in top_topics[:5]:
-                lbl = item.get("topic_label", "Unknown")
-                cnt = item.get("count", 0)
-                st.markdown(
-                    f"""
-                    <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #F3F4F6; font-size: 13px;">
-                        <span style="font-weight: 500; color: #1F2937;">{lbl}</span>
-                        <span style="color: #4B5563; font-weight: 600;">{cnt:,} reviews</span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-        else:
-            st.caption("Topic summaries unavailable.")
-        st.markdown("</div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(
+                """
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #C25E3E; letter-spacing: 0.06em;">Discussion Themes</div>
+                <div style="font-size: 16px; font-weight: 700; color: #111827; margin-top: 2px; margin-bottom: 12px;">Top Discovered Topics</div>
+                """,
+                unsafe_allow_html=True,
+            )
+            top_topics = insights.get("top_topics", [])
+            if top_topics:
+                for item in top_topics[:5]:
+                    lbl = item.get("topic_label", "Unknown")
+                    cnt = item.get("count", 0)
+                    st.markdown(
+                        f"""
+                        <div style="display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #F0ECE6; font-size: 13px;">
+                            <span style="font-weight: 500; color: #1F2937;">{lbl}</span>
+                            <span style="color: #4B5563; font-weight: 600;">{cnt:,} reviews</span>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+            else:
+                st.caption("Topic summaries unavailable.")
 
     with c_unc:
-        unc_cnt = insights.get("uncertain_count", 0)
-        unc_pct = insights.get("uncertain_pct", 0.0)
-        st.markdown(
-            f"""
-            <div style="background: #FFFFFF; border: 1px solid #EAE4DC; border-radius: 6px; padding: 20px;">
-                <div style="font-size: 12px; font-weight: 600; text-transform: uppercase; color: #D97706; letter-spacing: 0.05em;">Quality Assurance</div>
-                <div style="font-size: 16px; font-weight: 700; color: #111827; margin-top: 4px; margin-bottom: 12px;">Uncertainty & Model Disagreement</div>
-                <div style="font-size: 13px; color: #374151; line-height: 1.5;">
-                    <b>{unc_cnt:,} reviews ({unc_pct}%)</b> were flagged due to disagreement between VADER and DistilBERT or sub-threshold confidence (< 0.65).
+        with st.container(border=True):
+            unc_cnt = insights.get("uncertain_count", 0)
+            unc_pct = insights.get("uncertain_pct", 0.0)
+            st.markdown(
+                f"""
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #D97706; letter-spacing: 0.06em;">Quality Assurance</div>
+                <div style="font-size: 16px; font-weight: 700; color: #111827; margin-top: 2px; margin-bottom: 8px;">Uncertainty & Model Disagreement</div>
+                <div style="font-size: 13px; color: #374151; line-height: 1.5; margin-bottom: 8px;">
+                    <b>{unc_cnt:,} reviews ({unc_pct}%)</b> flagged due to disagreement between VADER and DistilBERT or sub-threshold confidence (< 0.65).
                 </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if unc_cnt > 0 and "uncertainty_flag" in df.columns:
-            with st.expander("Inspect Sample Uncertain Reviews"):
+                """,
+                unsafe_allow_html=True,
+            )
+            if unc_cnt > 0 and "uncertainty_flag" in df.columns:
                 u_cols = [c for c in ["review_id", "original_review", "vader_sentiment", "transformer_sentiment"] if c in df.columns]
-                st.dataframe(df[df["uncertainty_flag"] == True][u_cols].head(8), use_container_width=True)
+                render_professional_table(df[df["uncertainty_flag"] == True][u_cols].head(8), max_height=260)
 
 
 # ── Application Dispatcher ────────────────────────────────────────────────────
